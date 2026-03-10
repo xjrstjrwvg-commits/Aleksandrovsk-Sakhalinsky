@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極・ULTRA ENGINE Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body { overflow-x: hidden; position: relative; width: 100%; touch-action: pan-y; }
+        .dark { color-scheme: dark; }
+        .glass { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl; }
+        input, select, textarea { @apply bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-sm outline-none focus:ring-1 ring-blue-500 font-bold; }
+        .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
+        ::-webkit-scrollbar { display: none; }
+        .success-btn { @apply bg-emerald-500 text-white !important; }
+        .route-card { @apply bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-3; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-3 pb-24">
+    <div class="max-w-md mx-auto space-y-3">
+        <header class="flex justify-between items-center py-1">
+            <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
+            <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">All Copy</button>
+        </header>
+
+        <!-- メインパネル -->
+        <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
+            <input id="sw" placeholder="開始単語" class="w-full">
+            
+            <!-- 4列グリッドに拡張：経由(via)を追加 -->
+            <div class="grid grid-cols-4 gap-2">
+                <input id="sc" placeholder="開始字" title="開始字">
+                <input id="via" placeholder="経由(あ→い)" class="bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-400/30" title="経由文字">
+                <input id="mc" placeholder="必須" title="必須文字">
+                <input id="ec" placeholder="終了字" title="終了字">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">使用不可文字</label>
+                    <input id="exc" placeholder="ン,ガ" class="w-full">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">ルートパターン</label>
+                    <input id="pattern" placeholder="*, ア*, *ン" class="w-full">
+                </div>
+            </div>
+
+            <!-- 50音ずらし -->
+            <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
+                    <input type="checkbox" id="use_shift" class="w-5 h-5 cursor-pointer accent-blue-600">
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl">
+                    <div class="flex gap-2 font-bold text-[10px]">
+                        <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="shift_mode" value="abs" checked class="w-3 h-3"> ±</label>
+                        <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="shift_mode" value="normal" class="w-3 h-3"> 通常</label>
+                    </div>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" onclick="adjustVal('ks_abs',-1)" class="step-btn">-</button>
+                        <input type="number" id="ks_abs" value="1" class="w-10 text-center bg-transparent border-none text-sm font-bold">
+                        <button type="button" onclick="adjustVal('ks_abs',1)" class="step-btn">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 設定オプション -->
+            <div class="grid grid-cols-2 gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="space-y-1">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点変換OK</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku" class="accent-blue-600"> 半濁点変換OK</label>
+                </div>
+                <div class="space-y-1">
+                    <label class="flex items-center gap-1 cursor-pointer text-orange-600"><input type="checkbox" id="unify_small" class="accent-orange-500"> 小文字を大文字視</label>
+                </div>
+            </div>
+
+            <!-- 単語数・文字数 -->
+            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">単語数</label>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="adjustVal('ml',-1)" class="step-btn">-</button>
+                        <input type="number" id="ml" value="3" class="w-10 text-center bg-transparent border-none text-sm font-bold">
+                        <button type="button" onclick="adjustVal('ml',1)" class="step-btn">+</button>
+                    </div>
+                </div>
+                <div class="space-y-1 text-right">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">物理 / 文字計</label>
+                    <div class="flex justify-end gap-2">
+                        <input type="number" id="ps" value="0" class="w-10 text-center text-sm font-bold" title="位置ずらし">
+                        <input type="number" id="ttl" placeholder="計" class="w-12 text-center text-sm font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 特殊制約 -->
+            <div class="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="flex flex-wrap gap-3 text-[10px] font-bold">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="conj" class="accent-blue-600"> 共役排除</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="rt" class="accent-blue-600"> 牛耕</label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between font-bold pt-1">
+                <div class="flex gap-3 text-[11px]">
+                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="country" checked> 国</label>
+                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="capital" checked> 首都</label>
+                </div>
+                <button type="button" onclick="run()" id="btn" class="bg-blue-600 text-white font-black px-8 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all">探索実行</button>
+            </div>
+        </div>
+
+        <!-- 結果表示エリア -->
+        <div id="res" class="space-y-3"></div>
+    </div>
+
+    <script>
+        function adjustVal(id, step) {
+            const el = document.getElementById(id);
+            el.value = Math.max(1, parseInt(el.value) + step);
+        }
+
+        async function run() {
+            const btn = document.getElementById('btn');
+            const resDiv = document.getElementById('res');
+            btn.disabled = true;
+            btn.innerText = "探索中...";
+            resDiv.innerHTML = "";
+
+            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
+            
+            const data = {
+                start_word: document.getElementById('sw').value,
+                start_char: document.getElementById('sc').value,
+                via_pattern: document.getElementById('via').value, // ★追加
+                must_char: document.getElementById('mc').value,
+                end_char: document.getElementById('ec').value,
+                exclude_chars: document.getElementById('exc').value,
+                pattern: document.getElementById('pattern').value,
+                max_len: document.getElementById('ml').value,
+                pos_shift: document.getElementById('ps').value,
+                ks_abs: document.getElementById('ks_abs').value,
+                use_shift: document.getElementById('use_shift').checked,
+                allow_daku: document.getElementById('allow_daku').checked,
+                allow_handaku: document.getElementById('allow_handaku').checked,
+                unify_small: document.getElementById('unify_small').checked,
+                exclude_conjugates: document.getElementById('conj').checked,
+                round_trip: document.getElementById('rt').checked,
+                categories: cats
+            };
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (result.routes.length === 0) {
+                    resDiv.innerHTML = '<div class="text-center p-10 font-bold text-slate-400">ルートが見つかりませんでした</div>';
+                } else {
+                    result.routes.forEach(route => {
+                        const card = document.createElement('div');
+                        card.className = 'route-card';
+                        card.innerHTML = `<div class="text-[10px] text-blue-500 font-black mb-1 uppercase tracking-widest">${route.length} WORDS</div>
+                                          <div class="font-bold text-sm">${route.join(' → ')}</div>`;
+                        resDiv.appendChild(card);
+                    });
+                }
+            } catch (e) {
+                alert("エラーが発生しました");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "探索実行";
+            }
+        }
+
+        function copyAll() {
+            const txt = Array.from(document.querySelectorAll('.route-card div:last-child')).map(el => el.innerText).join('\n');
+            navigator.clipboard.writeText(txt);
+            const b = document.getElementById('allCopyBtn');
+            b.innerText = "Copied!";
+            b.classList.add('success-btn');
+            setTimeout(() => {
+                b.innerText = "All Copy";
+                b.classList.remove('success-btn');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

@@ -76,7 +76,6 @@ def search():
     exclusive_choice = d.get('exclusive_choice', False)
     
     raw_pattern = to_katakana(d.get('pattern', ""))
-    patterns = [p.strip() for p in raw_pattern.split(',')] if raw_pattern else []
     exclude_chars = to_katakana(d.get('exclude_chars', ""))
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
     group_constraints = d.get('group_constraints', [])
@@ -128,23 +127,47 @@ def search():
         if time.time() - start_time > 15 or len(results) >= 1500: return
         
         full_current = "".join(path)
+        path_set = set(path)
         if unify_small:
             full_current = "".join([SMALL_TO_LARGE.get(c, c) for c in full_current])
+            path_set = set("".join([SMALL_TO_LARGE.get(c, c) for c in w]) for w in path)
 
         if len(path) == max_len:
+            # 強制単語チェック
             if not force_words.issubset(set(path)): return
-            path_set = set(path)
-            for group in group_constraints:
-                if not any(target in path_set for target in group if target): return
             
-            # --- 選択式必須文字の判定 ---
+            # グループ必須（1つ以上出現）チェック
+            for group in group_constraints:
+                if not any(target in set(path) for target in group if target): return
+            
+            # --- 選択式必須文字/単語の判定（個数指定対応） ---
             for choice_group in choice_constraints:
-                found_count = sum(1 for char in choice_group if char in full_current)
-                if exclusive_choice:
-                    if found_count != 1: return
-                else:
-                    if found_count < 1: return
+                target_count = 1
+                clean_group = []
+                for item in choice_group:
+                    if ':' in item:
+                        parts = item.split(':')
+                        if parts[1].isdigit():
+                            target_count = int(parts[1])
+                            if parts[0]: clean_group.append(parts[0])
+                        else:
+                            clean_group.append(item)
+                    else:
+                        clean_group.append(item)
 
+                # ルート内に含まれる種類数をカウント
+                # 単語そのもの、または文字としての出現を両方チェック
+                found_count = 0
+                for target in clean_group:
+                    if target in path or target in full_current:
+                        found_count += 1
+                
+                if exclusive_choice:
+                    if found_count != target_count: return
+                else:
+                    if found_count < target_count: return
+
+            # 個数指定・必須文字チェック
             if use_multi_limit:
                 if not all(full_current.count(c) == n for c, n in mc_counts.items()): return
             elif must_chars:
@@ -154,6 +177,8 @@ def search():
                     if not all(mc in full_current for mc in must_chars): return
             
             if target_total_len is not None and current_total_len != target_total_len: return
+            
+            # 終了字チェック
             last_tail = get_clean_char(path[-1], "tail", pos_shift)
             allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
             if end_char and last_tail not in allowed_ends: return

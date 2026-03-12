@@ -32,7 +32,9 @@ def get_clean_char(w, pos="head", offset=0):
     text = w.replace("ー", "")
     if not text: return ""
     try:
-        char = text[offset] if pos == "head" else text[-(1+offset)]
+        # pos="tail"の時、offset=0なら末尾、1なら末尾から2番目...
+        idx = offset if pos == "head" else -(1 + offset)
+        char = text[idx]
         return SMALL_TO_LARGE.get(char, char)
     except IndexError: return ""
 
@@ -74,7 +76,8 @@ def search():
     
     choice_constraints = d.get('choice_constraints', [])
     exclusive_choice = d.get('exclusive_choice', False)
-    
+    auto_recovery = d.get('auto_recovery', False) # 新機能フラグ
+
     raw_pattern = to_katakana(d.get('pattern', ""))
     exclude_chars = to_katakana(d.get('exclude_chars', ""))
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
@@ -116,8 +119,8 @@ def search():
     head_index = defaultdict(list)
     tail_index = defaultdict(list)
     for w in word_pool:
-        head_index[get_clean_char(w, "head", pos_shift)].append(w)
-        tail_index[get_clean_char(w, "tail", pos_shift)].append(w)
+        head_index[get_clean_char(w, "head")].append(w) # インデックスは基本位置で固定
+        tail_index[get_clean_char(w, "tail")].append(w)
 
     results = []
     start_time = time.time()
@@ -138,7 +141,6 @@ def search():
             for choice_group in choice_constraints:
                 target_count = 1
                 clean_group = []
-                
                 last_item = choice_group[-1]
                 if ':' in last_item:
                     val_parts = last_item.split(':')
@@ -150,13 +152,7 @@ def search():
                 else:
                     clean_group = choice_group
 
-                # 合計出現回数を計算
-                total_found = 0
-                for target in clean_group:
-                    if not target: continue
-                    # 文字としての出現をカウント
-                    total_found += full_current.count(target)
-
+                total_found = sum(full_current.count(target) for target in clean_group if target)
                 if exclusive_choice:
                     if total_found != target_count: return
                 else:
@@ -172,32 +168,46 @@ def search():
             
             if target_total_len is not None and current_total_len != target_total_len: return
             
-            last_tail = get_clean_char(path[-1], "tail", pos_shift)
+            last_tail = get_clean_char(path[-1], "tail")
             allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
             if end_char and last_tail not in allowed_ends: return
             
             results.append(list(path))
             return
         
+        # 次の候補を探す
         is_odd_conn = (len(path) % 2 != 0)
         t_pos = ("tail" if is_odd_conn else "head") if round_trip else "head"
-        src_char = get_clean_char(path[-1], "tail" if not round_trip or is_odd_conn else "head", pos_shift)
-
-        base_targets = {shift_kana(src_char, abs(ks_val)), shift_kana(src_char, -abs(ks_val))} if use_shift and ks_val != 0 else {src_char}
-        if use_shift and ks_val != 0 and src_char in base_targets: base_targets.remove(src_char)
-        
-        all_targets = set()
-        for bt in base_targets:
-            all_targets.update(get_variants(bt, allow_daku, allow_handaku))
-
         idx = head_index if t_pos == "head" else tail_index
-        for tc in all_targets:
-            for nxt in idx.get(tc, []):
-                if nxt not in path: solve(path + [nxt], current_total_len + len(nxt))
+
+        # リカバリー探索（遡り接続）の範囲設定
+        max_offset = len(path[-1].replace("ー", ""))
+        offsets_to_try = range(pos_shift, max_offset) if auto_recovery else [pos_shift]
+
+        found_any_next = False
+        for current_offset in offsets_to_try:
+            src_char = get_clean_char(path[-1], "tail" if not round_trip or is_odd_conn else "head", current_offset)
+            if not src_char: continue
+
+            base_targets = {shift_kana(src_char, abs(ks_val)), shift_kana(src_char, -abs(ks_val))} if use_shift and ks_val != 0 else {src_char}
+            if use_shift and ks_val != 0 and src_char in base_targets: base_targets.discard(src_char)
+            
+            all_targets = set()
+            for bt in base_targets:
+                all_targets.update(get_variants(bt, allow_daku, allow_handaku))
+
+            for tc in all_targets:
+                for nxt in idx.get(tc, []):
+                    if nxt not in path:
+                        found_any_next = True
+                        solve(path + [nxt], current_total_len + len(nxt))
+            
+            # auto_recoveryがONの場合、その文字（オフセット）で見つかったら、より手前の文字は探さない（優先順位）
+            if found_any_next: break
 
     starts = [start_word] if (start_word in word_pool) else word_pool
     for w in sorted(starts):
-        if not start_word and start_char and get_clean_char(w, "head", pos_shift) != start_char: continue
+        if not start_word and start_char and get_clean_char(w, "head") != start_char: continue
         solve([w], len(w))
 
     return jsonify({"routes": results, "count": len(results)})

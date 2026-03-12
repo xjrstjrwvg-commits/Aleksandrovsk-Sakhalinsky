@@ -43,7 +43,7 @@
             </div>
 
             <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">グループ必須 (どれか1つ以上出現)</label>
+                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">グループ必須 (1行1組)</label>
                 <textarea id="gc" placeholder="アメリカ,イギリス" class="w-full h-16 resize-none text-[11px]"></textarea>
             </div>
 
@@ -74,10 +74,14 @@
                 </div>
             </div>
 
+            <!-- 特殊ルール設定 -->
             <div class="grid grid-cols-2 gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点変換OK</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku" class="accent-blue-600"> 半濁点OK</label>
+                    <label class="flex items-center gap-1 cursor-pointer text-rose-600 font-black">
+                        <input type="checkbox" id="char_limit_mode" class="accent-rose-500 w-4 h-4"> 文字重複禁止
+                    </label>
                 </div>
                 <div class="space-y-1">
                     <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery" class="accent-indigo-500"> 遡り接続</label>
@@ -136,7 +140,7 @@
     </div>
 
     <script>
-        let wordStates = {}; let currentRoutes = [];
+        let currentRoutes = [];
 
         function to_katakana(text) {
             return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60));
@@ -147,31 +151,43 @@
                 const s = JSON.parse(localStorage.ultraSettings);
                 const fields = ['sw','sc','mc','ec','exc','pattern','gc','cc','ml','ps','ks_abs','ttl','copy_limit'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                if(s.sort_order) document.getElementById('sort_order').value = s.sort_order;
-                document.getElementById('use_shift').checked = s.use_shift || false;
-                const checks = ['conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery'];
+                
+                const checks = ['conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery','char_limit_mode'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
+                
                 document.querySelectorAll('input[name="cat"]').forEach(c => c.checked = (s.cats || ["country"]).includes(c.value));
             }
         }
 
         function saveSettings() {
             const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            const sm = document.querySelector('input[name="shift_mode"]:checked');
             localStorage.ultraSettings = JSON.stringify({
-                sw: document.getElementById('sw').value, sc: document.getElementById('sc').value,
-                mc: document.getElementById('mc').value, ec: document.getElementById('ec').value,
-                exc: document.getElementById('exc').value, pattern: document.getElementById('pattern').value,
-                gc: document.getElementById('gc').value, cc: document.getElementById('cc').value,
-                ml: document.getElementById('ml').value, ps: document.getElementById('ps').value,
-                ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
-                copy_limit: document.getElementById('copy_limit').value, sort_order: document.getElementById('sort_order').value,
-                use_shift: document.getElementById('use_shift').checked, shift_mode: sm ? sm.value : 'abs',
-                conj: document.getElementById('conj').checked, rt: document.getElementById('rt').checked,
-                once: document.getElementById('once').checked, copy_with_len: document.getElementById('copy_with_len').checked,
-                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
-                unify_small: document.getElementById('unify_small').checked, exclusive_choice: document.getElementById('exclusive_choice').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked, cats: cats
+                sw: document.getElementById('sw').value,
+                sc: document.getElementById('sc').value,
+                mc: document.getElementById('mc').value,
+                ec: document.getElementById('ec').value,
+                exc: document.getElementById('exc').value,
+                pattern: document.getElementById('pattern').value,
+                gc: document.getElementById('gc').value,
+                cc: document.getElementById('cc').value,
+                ml: document.getElementById('ml').value,
+                ps: document.getElementById('ps').value,
+                ks_abs: document.getElementById('ks_abs').value,
+                ttl: document.getElementById('ttl').value,
+                copy_limit: document.getElementById('copy_limit').value,
+                sort_order: document.getElementById('sort_order').value,
+                use_shift: document.getElementById('use_shift').checked,
+                conj: document.getElementById('conj').checked,
+                rt: document.getElementById('rt').checked,
+                once: document.getElementById('once').checked,
+                copy_with_len: document.getElementById('copy_with_len').checked,
+                allow_daku: document.getElementById('allow_daku').checked,
+                allow_handaku: document.getElementById('allow_handaku').checked,
+                unify_small: document.getElementById('unify_small').checked,
+                exclusive_choice: document.getElementById('exclusive_choice').checked,
+                auto_recovery: document.getElementById('auto_recovery').checked,
+                char_limit_mode: document.getElementById('char_limit_mode').checked,
+                cats: cats
             });
         }
 
@@ -180,7 +196,7 @@
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
-                // ルートパターンのパース修正 (位置指定を維持しつつ中身をカタカナ化)
+                // パターンのパース
                 const patterns = document.getElementById('pattern').value.split(',').map(p => {
                     const s = p.trim();
                     const m = s.match(/^(\d+)(.*)$/);
@@ -188,34 +204,37 @@
                     return to_katakana(s);
                 }).filter(p => p);
 
+                // 選択必須のパース
                 const cclines = document.getElementById('cc').value.split('\n').map(l => {
                     const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
                     if (items.length === 0) return null;
-                    const last = items[items.length - 1];
-                    if (last.includes(':')) {
-                        const parts = last.split(':');
-                        items[items.length - 1] = to_katakana(parts[0]) + ':' + parts[1];
-                        for(let i=0; i < items.length - 1; i++) items[i] = to_katakana(items[i]);
-                    } else {
-                        for(let i=0; i < items.length; i++) items[i] = to_katakana(items[i]);
-                    }
-                    return items;
+                    return items.map(item => {
+                        if (item.includes(':')) {
+                            const [val, num] = item.split(':');
+                            return to_katakana(val) + ':' + num;
+                        }
+                        return to_katakana(item);
+                    });
                 }).filter(g => g !== null);
 
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        start_word: document.getElementById('sw').value, start_char: document.getElementById('sc').value,
-                        must_char: document.getElementById('mc').value, end_char: document.getElementById('ec').value,
+                        start_word: document.getElementById('sw').value,
+                        start_char: document.getElementById('sc').value,
+                        must_char: document.getElementById('mc').value,
+                        end_char: document.getElementById('ec').value,
                         exclude_chars: document.getElementById('exc').value, 
-                        patterns: patterns, // キー名を app.py と一致させる
+                        patterns: patterns,
                         group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length > 0),
                         choice_constraints: cclines,
                         exclusive_choice: document.getElementById('exclusive_choice').checked,
                         auto_recovery: document.getElementById('auto_recovery').checked,
+                        char_limit_mode: document.getElementById('char_limit_mode').checked,
                         max_len: document.getElementById('ml').value,
                         target_total_len: document.getElementById('ttl').value ? parseInt(document.getElementById('ttl').value) : null,
-                        pos_shift: document.getElementById('ps').value, use_shift: document.getElementById('use_shift').checked,
+                        pos_shift: document.getElementById('ps').value,
+                        use_shift: document.getElementById('use_shift').checked,
                         ks_abs: document.getElementById('ks_abs').value,
                         allow_daku: document.getElementById('allow_daku').checked,
                         allow_handaku: document.getElementById('allow_handaku').checked,
@@ -223,9 +242,7 @@
                         exclude_conjugates: document.getElementById('conj').checked,
                         round_trip: document.getElementById('rt').checked,
                         once_constraint: document.getElementById('once').checked,
-                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
-                        blocked_words: Object.keys(wordStates).filter(w => wordStates[w] === 1),
-                        force_words: Object.keys(wordStates).filter(w => wordStates[w] === 2)
+                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value)
                     })
                 });
                 const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false;

@@ -129,17 +129,38 @@ def search():
     def solve(path, current_total_len):
         if time.time() - start_time > 15 or len(results) >= 1500: return
         
-        # --- 追加：ルートパターンのチェック (各ステップで判定) ---
+        # --- 位置固定ルートパターンのチェック ---
         if patterns:
+            current_idx = len(path) # 1, 2, 3...
             current_word = path[-1]
-            match_any = False
+            
+            # 位置指定パターンの解析 (例: "2ア*")
+            pos_match = False
+            has_pos_constraint = False
             for p in patterns:
-                # * を .* に変換して正規表現マッチ
-                regex = "^" + re.escape(p).replace(r"\*", ".*") + "$"
-                if re.match(regex, current_word):
-                    match_any = True
-                    break
-            if not match_any: return
+                m = re.match(r"^(\d+)(.*)$", p)
+                if m:
+                    pos_num, pattern_body = m.groups()
+                    if int(pos_num) == current_idx:
+                        has_pos_constraint = True
+                        regex = "^" + re.escape(pattern_body).replace(r"\*", ".*") + "$"
+                        if re.match(regex, current_word):
+                            pos_match = True
+                            break
+            
+            # 指定位置の制約があるのに合致しなかったらNG
+            if has_pos_constraint and not pos_match: return
+            
+            # 自由パターンの解析 (数字なし。例: "*ン")
+            free_patterns = [p for p in patterns if not re.match(r"^\d+", p)]
+            if free_patterns:
+                free_match = False
+                for p in free_patterns:
+                    regex = "^" + re.escape(p).replace(r"\*", ".*") + "$"
+                    if re.match(regex, current_word):
+                        free_match = True
+                        break
+                if not free_match: return
 
         full_current = "".join(path)
         if unify_small:
@@ -159,7 +180,6 @@ def search():
                     val_parts = last_item.split(':')
                     if val_parts[-1].isdigit():
                         target_count = int(val_parts[-1])
-                        # 数値を除いた残りを抽出
                         base_val = val_parts[0]
                         clean_group = choice_group[:-1] + ([base_val] if base_val else [])
                     else:

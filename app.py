@@ -32,7 +32,6 @@ def get_clean_char(w, pos="head", offset=0):
     text = w.replace("ー", "")
     if not text: return ""
     try:
-        # pos="tail"の時、offset=0なら末尾、1なら末尾から2番目...
         idx = offset if pos == "head" else -(1 + offset)
         char = text[idx]
         return SMALL_TO_LARGE.get(char, char)
@@ -76,9 +75,11 @@ def search():
     
     choice_constraints = d.get('choice_constraints', [])
     exclusive_choice = d.get('exclusive_choice', False)
-    auto_recovery = d.get('auto_recovery', False) # 新機能フラグ
+    auto_recovery = d.get('auto_recovery', False)
 
     raw_pattern = to_katakana(d.get('pattern', ""))
+    patterns = [p.strip() for p in raw_pattern.split(',')] if raw_pattern else []
+    
     exclude_chars = to_katakana(d.get('exclude_chars', ""))
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
     group_constraints = d.get('group_constraints', [])
@@ -119,7 +120,7 @@ def search():
     head_index = defaultdict(list)
     tail_index = defaultdict(list)
     for w in word_pool:
-        head_index[get_clean_char(w, "head")].append(w) # インデックスは基本位置で固定
+        head_index[get_clean_char(w, "head")].append(w)
         tail_index[get_clean_char(w, "tail")].append(w)
 
     results = []
@@ -128,6 +129,18 @@ def search():
     def solve(path, current_total_len):
         if time.time() - start_time > 15 or len(results) >= 1500: return
         
+        # --- 追加：ルートパターンのチェック (各ステップで判定) ---
+        if patterns:
+            current_word = path[-1]
+            match_any = False
+            for p in patterns:
+                # * を .* に変換して正規表現マッチ
+                regex = "^" + re.escape(p).replace(r"\*", ".*") + "$"
+                if re.match(regex, current_word):
+                    match_any = True
+                    break
+            if not match_any: return
+
         full_current = "".join(path)
         if unify_small:
             full_current = "".join([SMALL_TO_LARGE.get(c, c) for c in full_current])
@@ -146,7 +159,9 @@ def search():
                     val_parts = last_item.split(':')
                     if val_parts[-1].isdigit():
                         target_count = int(val_parts[-1])
-                        clean_group = choice_group[:-1] + ([val_parts[0]] if val_parts[0] else [])
+                        # 数値を除いた残りを抽出
+                        base_val = val_parts[0]
+                        clean_group = choice_group[:-1] + ([base_val] if base_val else [])
                     else:
                         clean_group = choice_group
                 else:
@@ -180,7 +195,6 @@ def search():
         t_pos = ("tail" if is_odd_conn else "head") if round_trip else "head"
         idx = head_index if t_pos == "head" else tail_index
 
-        # リカバリー探索（遡り接続）の範囲設定
         max_offset = len(path[-1].replace("ー", ""))
         offsets_to_try = range(pos_shift, max_offset) if auto_recovery else [pos_shift]
 
@@ -202,7 +216,6 @@ def search():
                         found_any_next = True
                         solve(path + [nxt], current_total_len + len(nxt))
             
-            # auto_recoveryがONの場合、その文字（オフセット）で見つかったら、より手前の文字は探さない（優先順位）
             if found_any_next: break
 
     starts = [start_word] if (start_word in word_pool) else word_pool

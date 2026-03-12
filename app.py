@@ -130,34 +130,58 @@ def search():
             full_current = "".join([SMALL_TO_LARGE.get(c, c) for c in full_current])
 
         if len(path) == max_len:
+            # 必須グループ
             for group in group_constraints:
                 if not any(target in set(path) for target in group if target): return
+            
+            # --- 選択式必須（個数カウント）の修正 ---
             for choice_group in choice_constraints:
                 target_count = 1
-                clean_group = []
-                if choice_group and ':' in choice_group[-1]:
-                    parts = choice_group[-1].split(':')
+                items_to_check = []
+                
+                # 最後の要素がコロン付き個数指定かチェック
+                last_item = choice_group[-1]
+                if ':' in last_item:
+                    parts = last_item.split(':')
                     if parts[-1].isdigit():
                         target_count = int(parts[-1])
-                        clean_group = choice_group[:-1] + ([parts[0]] if parts[0] else [])
-                else: clean_group = choice_group
-                total_found = sum(full_current.count(target) for target in clean_group if target)
+                        # 数値を除いた文字部分
+                        char_part = parts[0]
+                        items_to_check = choice_group[:-1] + ([char_part] if char_part else [])
+                    else:
+                        items_to_check = choice_group
+                else:
+                    items_to_check = choice_group
+
+                # 合計出現回数をカウント
+                total_found = 0
+                for target in items_to_check:
+                    if not target: continue
+                    total_found += full_current.count(target)
+
                 if exclusive_choice:
                     if total_found != target_count: return
                 else:
                     if total_found < target_count: return
+
+            # 単一文字制約
             if must_chars:
                 if once_constraint:
                     if not all(full_current.count(mc) == 1 for mc in must_chars): return
                 else:
                     if not all(mc in full_current for mc in must_chars): return
+            
             if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
+            
+            # 終了字チェック
             last_tail = get_clean_char(path[-1], "tail")
             allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
             if end_char and last_tail not in allowed_ends: return
+            
             results.append(list(path))
             return
         
+        # 次を探索
         is_odd_conn = (len(path) % 2 != 0)
         max_offset = len(path[-1].replace("ー", ""))
         offsets_to_try = range(pos_shift, max_offset) if auto_recovery else [pos_shift]
@@ -166,17 +190,20 @@ def search():
         for offset in offsets_to_try:
             src_char = get_clean_char(path[-1], "tail" if not round_trip or is_odd_conn else "head", offset)
             if not src_char: continue
+            
+            # 基本の「50音ずらし」
             base_targets = {shift_kana(src_char, abs(ks_val)), shift_kana(src_char, -abs(ks_val))} if use_shift and ks_val != 0 else {src_char}
+            
             all_targets = set()
-            for bt in base_targets: all_targets.update(get_variants(bt, allow_daku, allow_handaku))
+            for bt in base_targets:
+                all_targets.update(get_variants(bt, allow_daku, allow_handaku))
+            
             for tc in all_targets:
                 for nxt in head_index.get(tc, []):
                     if nxt not in path:
-                        # --- 文字重複禁止チェック ---
                         if char_limit_mode:
                             used_chars = set("".join(path))
-                            next_word_chars = set(nxt)
-                            if not used_chars.isdisjoint(next_word_chars): continue
+                            if not used_chars.isdisjoint(set(nxt)): continue
                         found_any = True
                         solve(path + [nxt], current_total_len + len(nxt))
             if found_any: break

@@ -70,8 +70,10 @@ def search():
     choice_constraints = d.get('choice_constraints', [])
     exclusive_choice = d.get('exclusive_choice', False)
     auto_recovery = d.get('auto_recovery', False)
-    patterns = d.get('patterns', []) # 修正: フロントから patterns で受け取る
-    
+    patterns = d.get('patterns', [])
+    char_limit_mode = d.get('char_limit_mode', False)
+
+    raw_pattern = to_katakana(d.get('pattern', ""))
     exclude_chars = to_katakana(d.get('exclude_chars', ""))
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
     group_constraints = d.get('group_constraints', [])
@@ -98,12 +100,9 @@ def search():
             temp_pool.append(w)
     
     word_pool = list(set(temp_pool))
-
     head_index = defaultdict(list)
-    tail_index = defaultdict(list)
     for w in word_pool:
         head_index[get_clean_char(w, "head")].append(w)
-        tail_index[get_clean_char(w, "tail")].append(w)
 
     results = []
     start_time = time.time()
@@ -111,7 +110,7 @@ def search():
     def solve(path, current_total_len):
         if time.time() - start_time > 15 or len(results) >= 1500: return
         
-        # --- ルートパターン判定 (位置固定 & 自由) ---
+        # --- ルートパターン判定 ---
         if patterns:
             current_idx = len(path)
             current_word = path[-1]
@@ -153,13 +152,17 @@ def search():
             for choice_group in choice_constraints:
                 target_count = 1
                 clean_group = []
-                if choice_group and ':' in choice_group[-1]:
-                    parts = choice_group[-1].split(':')
-                    if parts[-1].isdigit():
-                        target_count = int(parts[-1])
-                        clean_group = choice_group[:-1] + ([parts[0]] if parts[0] else [])
-                else:
-                    clean_group = choice_group
+                last_item = choice_group[-1]
+                if ':' in last_item:
+                    val_parts = last_item.split(':')
+                    if val_parts[-1].isdigit():
+                        target_count = int(val_parts[-1])
+                        # 数値を除いた残りを抽出
+                        base_val = val_parts[0]
+                        clean_group = choice_group[:-1] + ([base_val] if base_val else [])
+                    else: clean_group = choice_group
+                else: clean_group = choice_group
+
                 total_found = sum(full_current.count(target) for target in clean_group if target)
                 if exclusive_choice:
                     if total_found != target_count: return
@@ -182,9 +185,6 @@ def search():
             return
         
         is_odd_conn = (len(path) % 2 != 0)
-        t_pos = ("tail" if is_odd_conn else "head") if round_trip else "head"
-        idx = head_index if t_pos == "head" else tail_index
-
         max_offset = len(path[-1].replace("ー", ""))
         offsets_to_try = range(pos_shift, max_offset) if auto_recovery else [pos_shift]
 
@@ -192,12 +192,21 @@ def search():
         for offset in offsets_to_try:
             src_char = get_clean_char(path[-1], "tail" if not round_trip or is_odd_conn else "head", offset)
             if not src_char: continue
+
             base_targets = {shift_kana(src_char, abs(ks_val)), shift_kana(src_char, -abs(ks_val))} if use_shift and ks_val != 0 else {src_char}
             all_targets = set()
-            for bt in base_targets: all_targets.update(get_variants(bt, allow_daku, allow_handaku))
+            for bt in base_targets:
+                all_targets.update(get_variants(bt, allow_daku, allow_handaku))
+
             for tc in all_targets:
-                for nxt in idx.get(tc, []):
+                for nxt in head_index.get(tc, []):
                     if nxt not in path:
+                        # 文字重複禁止チェック
+                        if char_limit_mode:
+                            used_chars = set("".join(path))
+                            next_word_chars = set(nxt)
+                            if not used_chars.isdisjoint(next_word_chars):
+                                continue
                         found_any = True
                         solve(path + [nxt], current_total_len + len(nxt))
             if found_any: break
@@ -206,6 +215,7 @@ def search():
     for w in sorted(starts):
         if not start_word and start_char and get_clean_char(w, "head") != start_char: continue
         solve([w], len(w))
+
     return jsonify({"routes": results, "count": len(results)})
 
 if __name__ == '__main__':

@@ -43,11 +43,11 @@
             </div>
 
             <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">グループ必須 (1行1組 / どれか1つ以上出現)</label>
+                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">グループ必須 (1行1組 / どれか出現)</label>
                 <textarea id="gc" placeholder="アメリカ,イギリス" class="w-full h-16 resize-none text-[11px]"></textarea>
             </div>
 
-            <!-- 選択式必須文字（個数・重複指定対応） -->
+            <!-- 選択式必須文字 -->
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <label class="text-[9px] font-bold text-orange-400 uppercase ml-1">選択必須 (1行1組 / 例: ン,ン:2)</label>
                 <textarea id="cc" placeholder="ン,ン:2" class="w-full h-16 resize-none text-[11px]"></textarea>
@@ -62,6 +62,7 @@
                 <label for="use_multi_limit" class="text-[10px] font-bold text-slate-500 uppercase cursor-pointer">個数指定モード</label>
             </div>
             
+            <!-- 50音ずらし -->
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="flex justify-between items-center">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
@@ -80,16 +81,19 @@
                 </div>
             </div>
 
+            <!-- 特殊ルール（遡り接続など） -->
             <div class="grid grid-cols-2 gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点変換OK</label>
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku" class="accent-blue-600"> 半濁点変換OK</label>
                 </div>
                 <div class="space-y-1">
+                    <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery" class="accent-indigo-500"> 遡り接続 (見つからない時戻る)</label>
                     <label class="flex items-center gap-1 cursor-pointer text-orange-600"><input type="checkbox" id="unify_small" class="accent-orange-500"> 小文字を大文字視</label>
                 </div>
             </div>
 
+            <!-- 数値設定 -->
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">単語数</label>
@@ -108,6 +112,7 @@
                 </div>
             </div>
 
+            <!-- 特殊制約 -->
             <div class="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="flex flex-wrap gap-3 text-[10px] font-bold">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="conj" class="accent-blue-600"> 共役排除</label>
@@ -162,7 +167,7 @@
                 document.getElementById('use_shift').checked = s.use_shift || false;
                 if(s.shift_mode) { const rb = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`); if(rb) rb.checked = true; }
                 
-                const checks = ['use_multi_limit','conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice'];
+                const checks = ['use_multi_limit','conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
                 
                 document.querySelectorAll('input[name="cat"]').forEach(c => c.checked = (s.cats || ["country"]).includes(c.value));
@@ -190,6 +195,7 @@
                 allow_handaku: document.getElementById('allow_handaku').checked,
                 unify_small: document.getElementById('unify_small').checked,
                 exclusive_choice: document.getElementById('exclusive_choice').checked,
+                auto_recovery: document.getElementById('auto_recovery').checked,
                 cats: cats, wordStates: wordStates
             });
         }
@@ -199,7 +205,7 @@
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
-                const sm = document.querySelector('input[name="shift_mode"]:checked');
+                const sm = document.querySelector('input[name="shift_mode"][value]:checked');
                 const gclines = document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length > 0);
                 
                 const cclines = document.getElementById('cc').value.split('\n').map(l => {
@@ -224,6 +230,7 @@
                         exclude_chars: document.getElementById('exc').value, pattern: document.getElementById('pattern').value,
                         group_constraints: gclines, choice_constraints: cclines,
                         exclusive_choice: document.getElementById('exclusive_choice').checked,
+                        auto_recovery: document.getElementById('auto_recovery').checked,
                         max_len: document.getElementById('ml').value,
                         target_total_len: document.getElementById('ttl').value ? parseInt(document.getElementById('ttl').value) : null,
                         pos_shift: document.getElementById('ps').value, use_shift: document.getElementById('use_shift').checked,
@@ -239,7 +246,7 @@
                 });
                 const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false;
                 display();
-            } catch(e) { alert("エラー"); btn.innerText = "Explore"; btn.disabled = false; }
+            } catch(e) { console.error(e); alert("エラー"); btn.innerText = "Explore"; btn.disabled = false; }
         }
 
         function display() {

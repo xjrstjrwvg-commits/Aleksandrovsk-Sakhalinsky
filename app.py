@@ -108,11 +108,10 @@ def search():
             if any(ex in check_w for ex in ex_list): continue
             temp_pool.append(w)
     
+    word_pool = list(set(temp_pool))
     if exclude_conjugates:
-        counts = Counter([(get_clean_char(w, "head"), get_clean_char(w, "tail")) for w in temp_pool if w])
-        word_pool = [w for w in temp_pool if counts[(get_clean_char(w, "head"), get_clean_char(w, "tail"))] == 1]
-    else:
-        word_pool = list(set(temp_pool))
+        counts = Counter([(get_clean_char(w, "head"), get_clean_char(w, "tail")) for w in word_pool if w])
+        word_pool = [w for w in word_pool if counts[(get_clean_char(w, "head"), get_clean_char(w, "tail"))] == 1]
 
     head_index = defaultdict(list)
     tail_index = defaultdict(list)
@@ -127,47 +126,42 @@ def search():
         if time.time() - start_time > 15 or len(results) >= 1500: return
         
         full_current = "".join(path)
-        path_set = set(path)
         if unify_small:
             full_current = "".join([SMALL_TO_LARGE.get(c, c) for c in full_current])
-            path_set = set("".join([SMALL_TO_LARGE.get(c, c) for c in w]) for w in path)
 
         if len(path) == max_len:
-            # 強制単語チェック
             if not force_words.issubset(set(path)): return
-            
-            # グループ必須（1つ以上出現）チェック
             for group in group_constraints:
                 if not any(target in set(path) for target in group if target): return
             
-            # --- 選択式必須文字/単語の判定（個数指定対応） ---
+            # --- 選択式必須文字の出現合計数判定 ---
             for choice_group in choice_constraints:
                 target_count = 1
                 clean_group = []
-                for item in choice_group:
-                    if ':' in item:
-                        parts = item.split(':')
-                        if parts[1].isdigit():
-                            target_count = int(parts[1])
-                            if parts[0]: clean_group.append(parts[0])
-                        else:
-                            clean_group.append(item)
-                    else:
-                        clean_group.append(item)
-
-                # ルート内に含まれる種類数をカウント
-                # 単語そのもの、または文字としての出現を両方チェック
-                found_count = 0
-                for target in clean_group:
-                    if target in path or target in full_current:
-                        found_count += 1
                 
-                if exclusive_choice:
-                    if found_count != target_count: return
+                last_item = choice_group[-1]
+                if ':' in last_item:
+                    val_parts = last_item.split(':')
+                    if val_parts[-1].isdigit():
+                        target_count = int(val_parts[-1])
+                        clean_group = choice_group[:-1] + ([val_parts[0]] if val_parts[0] else [])
+                    else:
+                        clean_group = choice_group
                 else:
-                    if found_count < target_count: return
+                    clean_group = choice_group
 
-            # 個数指定・必須文字チェック
+                # 合計出現回数を計算
+                total_found = 0
+                for target in clean_group:
+                    if not target: continue
+                    # 文字としての出現をカウント
+                    total_found += full_current.count(target)
+
+                if exclusive_choice:
+                    if total_found != target_count: return
+                else:
+                    if total_found < target_count: return
+
             if use_multi_limit:
                 if not all(full_current.count(c) == n for c, n in mc_counts.items()): return
             elif must_chars:
@@ -178,7 +172,6 @@ def search():
             
             if target_total_len is not None and current_total_len != target_total_len: return
             
-            # 終了字チェック
             last_tail = get_clean_char(path[-1], "tail", pos_shift)
             allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
             if end_char and last_tail not in allowed_ends: return

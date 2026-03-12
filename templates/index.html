@@ -47,13 +47,13 @@
                 <textarea id="gc" placeholder="アメリカ,イギリス" class="w-full h-16 resize-none text-[11px]"></textarea>
             </div>
 
-            <!-- 選択式必須文字（個数指定対応） -->
+            <!-- 選択式必須文字（個数・重複指定対応） -->
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="text-[9px] font-bold text-orange-400 uppercase ml-1">選択必須 (1行1組 / 例: ア,イ,ウ:2)</label>
-                <textarea id="cc" placeholder="ア,イ,ウ:2" class="w-full h-16 resize-none text-[11px]"></textarea>
+                <label class="text-[9px] font-bold text-orange-400 uppercase ml-1">選択必須 (1行1組 / 例: ン,ン:2)</label>
+                <textarea id="cc" placeholder="ン,ン:2" class="w-full h-16 resize-none text-[11px]"></textarea>
                 <div class="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-xl border border-orange-100 dark:border-orange-900/30">
                     <input type="checkbox" id="exclusive_choice" class="w-4 h-4 cursor-pointer accent-orange-500">
-                    <label for="exclusive_choice" class="text-[9px] font-bold text-orange-600 uppercase cursor-pointer">選択数を「ちょうどその数」に限定（排他）</label>
+                    <label for="exclusive_choice" class="text-[9px] font-bold text-orange-600 uppercase cursor-pointer">出現合計を「ちょうどその数」に限定</label>
                 </div>
             </div>
 
@@ -202,17 +202,19 @@
                 const sm = document.querySelector('input[name="shift_mode"]:checked');
                 const gclines = document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length > 0);
                 
-                // 選択式必須のパース（コロンの数値を維持）
                 const cclines = document.getElementById('cc').value.split('\n').map(l => {
-                    return l.split(/[、,]/).map(w => {
-                        const s = w.trim();
-                        if(s.includes(':')) {
-                            const [char, num] = s.split(':');
-                            return to_katakana(char) + ':' + num;
-                        }
-                        return to_katakana(s);
-                    }).filter(w => w);
-                }).filter(g => g.length > 0);
+                    const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
+                    if (items.length === 0) return null;
+                    const last = items[items.length - 1];
+                    if (last.includes(':')) {
+                        const parts = last.split(':');
+                        items[items.length - 1] = to_katakana(parts[0]) + ':' + parts[1];
+                        for(let i=0; i < items.length - 1; i++) items[i] = to_katakana(items[i]);
+                    } else {
+                        for(let i=0; i < items.length; i++) items[i] = to_katakana(items[i]);
+                    }
+                    return items;
+                }).filter(g => g !== null);
                 
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},

@@ -13,9 +13,7 @@
         .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
         ::-webkit-scrollbar { display: none; }
         .success-btn { @apply bg-emerald-500 text-white !important; }
-        
         .custom-scroll { max-height: 300px; overflow-y: auto; scrollbar-width: none; }
-        /* デフォルトの白ボタン用スタイル（ダークモード対応） */
         .btn-white { background-color: white; color: #334155; border-color: #e2e8f0; }
         .dark .btn-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
     </style>
@@ -27,16 +25,36 @@
                 <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
                 <button onclick="toggleDarkMode()" class="text-xl p-1 hover:scale-110 transition-transform" title="Toggle Dark Mode">🌗</button>
             </div>
-            <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">All Copy</button>
+            <div class="flex gap-2">
+                <button onclick="resetSettings()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">Reset</button>
+                <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">All Copy</button>
+            </div>
         </header>
 
         <!-- メインパネル -->
         <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
             <input id="sw" placeholder="開始単語" class="w-full">
+            
+            <!-- 開始字・終了字（全語縛り対応） -->
             <div class="grid grid-cols-3 gap-2">
-                <input id="sc" placeholder="開始字">
-                <input id="mc" placeholder="必須(ア:2)">
-                <input id="ec" placeholder="終了字">
+                <div class="space-y-1">
+                    <label class="text-[8px] font-bold text-slate-400 uppercase ml-1">開始字 / 全語始</label>
+                    <div class="flex gap-1">
+                        <input id="sc" placeholder="始" class="w-1/2 !p-2">
+                        <input id="asc" placeholder="全" class="w-1/2 !p-2 border-blue-500/30 border">
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[8px] font-bold text-slate-400 uppercase ml-1">必須文字</label>
+                    <input id="mc" placeholder="ア:2" class="w-full">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[8px] font-bold text-slate-400 uppercase ml-1">終了字 / 全語終</label>
+                    <div class="flex gap-1">
+                        <input id="ec" placeholder="終" class="w-1/2 !p-2">
+                        <input id="aec" placeholder="全" class="w-1/2 !p-2 border-blue-500/30 border">
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -98,9 +116,7 @@
                         <button type="button" onclick="bulkSet('white')" class="flex-1 py-2 bg-white dark:bg-slate-700 rounded-lg text-[9px] font-bold shadow-sm">全開放(白)</button>
                         <button type="button" onclick="bulkSet('red')" class="flex-1 py-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-lg text-[9px] font-bold shadow-sm">全禁止(赤)</button>
                     </div>
-                    <div id="dict-list" class="grid grid-cols-2 gap-1 custom-scroll p-1">
-                        <!-- JavaScriptで生成 -->
-                    </div>
+                    <div id="dict-list" class="grid grid-cols-2 gap-1 custom-scroll p-1"></div>
                 </div>
             </div>
 
@@ -170,42 +186,32 @@
 
     <script>
         let currentRoutes = [];
-        let wordStates = {}; // { word: 'white' | 'red' | 'blue' }
+        let wordStates = {};
 
-        function to_katakana(text) {
-            return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60));
-        }
-
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
-            loadDictionaryUI(); // 背景色リセットのため再描画
-            saveSettings();
-        }
-
-        // 状態に応じたスタイルを文字列で返す
+        function to_katakana(text) { return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60)); }
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); loadDictionaryUI(); saveSettings(); }
         function getWordStyle(state) {
             if (state === 'red') return "background-color: #f43f5e; color: white; border-color: #e11d48;";
             if (state === 'blue') return "background-color: #2563eb; color: white; border-color: #1d4ed8;";
-            // デフォルト（白）はダークモード対応のためクラスで制御
             return ""; 
+        }
+
+        function resetSettings() {
+            if(!confirm("設定をすべて初期化しますか？")) return;
+            localStorage.removeItem('ultraSettings');
+            location.reload();
         }
 
         async function init() {
             if (localStorage.ultraSettings) {
                 const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','mc','ec','exc','bsc','pattern','gc','cc','ml','ps','ks_abs','ttl','copy_limit'];
+                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','gc','cc','ml','ps','ks_abs','ttl','copy_limit'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                
                 const checks = ['conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery','char_limit_mode','use_shift'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
-                
-                if (s.shift_mode) {
-                    const rb = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`);
-                    if (rb) rb.checked = true;
-                }
+                if (s.shift_mode) { const rb = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`); if (rb) rb.checked = true; }
                 if (s.dark_mode) document.documentElement.classList.add('dark');
                 if (s.wordStates) wordStates = s.wordStates;
-                
                 document.querySelectorAll('input[name="cat"]').forEach(c => c.checked = (s.cats || ["country"]).includes(c.value));
             }
             await loadDictionaryUI();
@@ -218,53 +224,32 @@
             let allWords = [];
             cats.forEach(c => allWords = allWords.concat(dict[c] || []));
             allWords = Array.from(new Set(allWords)).sort();
-
             const list = document.getElementById('dict-list');
             list.innerHTML = allWords.map(w => {
                 const state = wordStates[w] || 'white';
                 const style = getWordStyle(state);
                 const baseClass = state === 'white' ? 'btn-white' : '';
-                return `<button type="button" onclick="toggleWordState(this, '${w}')" 
-                        class="word-btn text-[10px] font-bold p-2 rounded-lg border transition-all ${baseClass}" 
-                        style="${style}">${w}</button>`;
+                return `<button type="button" onclick="toggleWordState(this, '${w}')" class="word-btn text-[10px] font-bold p-2 rounded-lg border transition-all ${baseClass}" style="${style}">${w}</button>`;
             }).join('');
             updateDictStatus();
         }
 
         function toggleWordState(btn, word) {
             const cycle = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
-            const currentState = wordStates[word] || 'white';
-            const newState = cycle[currentState];
+            const newState = cycle[wordStates[word] || 'white'];
             wordStates[word] = newState;
-            
-            // クラスとスタイルの更新
-            if (newState === 'white') {
-                btn.classList.add('btn-white');
-                btn.style = "";
-            } else {
-                btn.classList.remove('btn-white');
-                btn.style = getWordStyle(newState);
-            }
-            
-            updateDictStatus();
-            saveSettings();
+            if (newState === 'white') { btn.classList.add('btn-white'); btn.style = ""; }
+            else { btn.classList.remove('btn-white'); btn.style = getWordStyle(newState); }
+            updateDictStatus(); saveSettings();
         }
 
         function bulkSet(state) {
-            const btns = document.querySelectorAll('.word-btn');
-            btns.forEach(btn => {
-                const word = btn.innerText;
-                wordStates[word] = state;
-                if (state === 'white') {
-                    btn.classList.add('btn-white');
-                    btn.style = "";
-                } else {
-                    btn.classList.remove('btn-white');
-                    btn.style = getWordStyle(state);
-                }
+            document.querySelectorAll('.word-btn').forEach(btn => {
+                wordStates[btn.innerText] = state;
+                if (state === 'white') { btn.classList.add('btn-white'); btn.style = ""; }
+                else { btn.classList.remove('btn-white'); btn.style = getWordStyle(state); }
             });
-            updateDictStatus();
-            saveSettings();
+            updateDictStatus(); saveSettings();
         }
 
         function updateDictStatus() {
@@ -276,36 +261,19 @@
         function saveSettings() {
             const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
             localStorage.ultraSettings = JSON.stringify({
-                sw: document.getElementById('sw').value,
-                sc: document.getElementById('sc').value,
-                mc: document.getElementById('mc').value,
-                ec: document.getElementById('ec').value,
-                exc: document.getElementById('exc').value,
-                bsc: document.getElementById('bsc').value,
-                pattern: document.getElementById('pattern').value,
-                gc: document.getElementById('gc').value,
-                cc: document.getElementById('cc').value,
-                ml: document.getElementById('ml').value,
-                ps: document.getElementById('ps').value,
-                ks_abs: document.getElementById('ks_abs').value,
-                ttl: document.getElementById('ttl').value,
-                copy_limit: document.getElementById('copy_limit').value,
-                sort_order: document.getElementById('sort_order').value,
-                use_shift: document.getElementById('use_shift').checked,
-                shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
-                dark_mode: document.documentElement.classList.contains('dark'),
-                conj: document.getElementById('conj').checked,
-                rt: document.getElementById('rt').checked,
-                once: document.getElementById('once').checked,
-                copy_with_len: document.getElementById('copy_with_len').checked,
-                allow_daku: document.getElementById('allow_daku').checked,
-                allow_handaku: document.getElementById('allow_handaku').checked,
-                unify_small: document.getElementById('unify_small').checked,
-                exclusive_choice: document.getElementById('exclusive_choice').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked,
-                char_limit_mode: document.getElementById('char_limit_mode').checked,
-                wordStates: wordStates,
-                cats: cats
+                sw: document.getElementById('sw').value, sc: document.getElementById('sc').value, asc: document.getElementById('asc').value,
+                mc: document.getElementById('mc').value, ec: document.getElementById('ec').value, aec: document.getElementById('aec').value,
+                exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value, pattern: document.getElementById('pattern').value,
+                gc: document.getElementById('gc').value, cc: document.getElementById('cc').value, ml: document.getElementById('ml').value,
+                ps: document.getElementById('ps').value, ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
+                copy_limit: document.getElementById('copy_limit').value, sort_order: document.getElementById('sort_order').value,
+                use_shift: document.getElementById('use_shift').checked, shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
+                dark_mode: document.documentElement.classList.contains('dark'), conj: document.getElementById('conj').checked,
+                rt: document.getElementById('rt').checked, once: document.getElementById('once').checked, copy_with_len: document.getElementById('copy_with_len').checked,
+                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
+                unify_small: document.getElementById('unify_small').checked, exclusive_choice: document.getElementById('exclusive_choice').checked,
+                auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
+                wordStates: wordStates, cats: cats
             });
         }
 
@@ -315,61 +283,35 @@
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
                 const patterns = document.getElementById('pattern').value.split(',').map(p => {
-                    const s = p.trim();
-                    const m = s.match(/^(\d+)(.*)$/);
-                    if(m) return m[1] + to_katakana(m[2]);
-                    return to_katakana(s);
+                    const s = p.trim(); const m = s.match(/^(\d+)(.*)$/);
+                    return m ? m[1] + to_katakana(m[2]) : to_katakana(s);
                 }).filter(p => p);
-
                 const cclines = document.getElementById('cc').value.split('\n').map(l => {
                     const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
-                    if (items.length === 0) return null;
-                    return items.map(item => {
-                        if (item.includes(':')) {
-                            const [val, num] = item.split(':');
-                            return to_katakana(val) + ':' + num;
-                        }
-                        return to_katakana(item);
-                    });
-                }).filter(g => g !== null);
-
-                const red_words = Object.keys(wordStates).filter(k => wordStates[k] === 'red');
-                const blue_words = Object.keys(wordStates).filter(k => wordStates[k] === 'blue');
+                    return items.length ? items.map(item => item.includes(':') ? to_katakana(item.split(':')[0]) + ':' + item.split(':')[1] : to_katakana(item)) : null;
+                }).filter(g => g);
 
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        start_word: document.getElementById('sw').value,
-                        start_char: document.getElementById('sc').value,
-                        must_char: document.getElementById('mc').value,
-                        end_char: document.getElementById('ec').value,
-                        exclude_chars: document.getElementById('exc').value, 
-                        ban_start_chars: document.getElementById('bsc').value,
-                        patterns: patterns,
-                        group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length > 0),
-                        choice_constraints: cclines,
-                        exclusive_choice: document.getElementById('exclusive_choice').checked,
-                        auto_recovery: document.getElementById('auto_recovery').checked,
-                        char_limit_mode: document.getElementById('char_limit_mode').checked,
-                        max_len: document.getElementById('ml').value,
-                        target_total_len: document.getElementById('ttl').value ? parseInt(document.getElementById('ttl').value) : null,
-                        pos_shift: document.getElementById('ps').value,
-                        use_shift: document.getElementById('use_shift').checked,
-                        shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
-                        ks_abs: document.getElementById('ks_abs').value,
-                        allow_daku: document.getElementById('allow_daku').checked,
-                        allow_handaku: document.getElementById('allow_handaku').checked,
-                        unify_small: document.getElementById('unify_small').checked,
-                        round_trip: document.getElementById('rt').checked,
-                        once_constraint: document.getElementById('once').checked,
-                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
-                        red_words: red_words,
-                        blue_words: blue_words
+                        start_word: document.getElementById('sw').value, start_char: document.getElementById('sc').value,
+                        all_start_char: document.getElementById('asc').value, must_char: document.getElementById('mc').value,
+                        end_char: document.getElementById('ec').value, all_end_char: document.getElementById('aec').value,
+                        exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
+                        patterns: patterns, group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length),
+                        choice_constraints: cclines, exclusive_choice: document.getElementById('exclusive_choice').checked,
+                        auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
+                        max_len: document.getElementById('ml').value, target_total_len: document.getElementById('ttl').value ? parseInt(document.getElementById('ttl').value) : null,
+                        pos_shift: document.getElementById('ps').value, use_shift: document.getElementById('use_shift').checked,
+                        shift_mode: document.querySelector('input[name="shift_mode"]:checked').value, ks_abs: document.getElementById('ks_abs').value,
+                        allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
+                        unify_small: document.getElementById('unify_small').checked, round_trip: document.getElementById('rt').checked,
+                        once_constraint: document.getElementById('once').checked, categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
+                        red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
                     })
                 });
-                const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false;
-                display();
-            } catch(e) { console.error(e); alert("エラー"); btn.innerText = "Explore"; btn.disabled = false; }
+                const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false; display();
+            } catch(e) { btn.innerText = "Explore"; btn.disabled = false; }
         }
 
         function display() {
@@ -377,53 +319,23 @@
             if (order === 'len_asc') currentRoutes.sort((a, b) => a.join('').length - b.join('').length || a.join('').localeCompare(b.join('')));
             else if (order === 'len_desc') currentRoutes.sort((a, b) => b.join('').length - a.join('').length || a.join('').localeCompare(b.join('')));
             else if (order === 'kana') currentRoutes.sort((a, b) => a.join('').localeCompare(b.join('')));
-
             document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `
                 <div class="glass p-4 rounded-[20px] flex flex-col gap-2 relative animate-in fade-in slide-in-from-bottom-2">
                     <div class="flex justify-between items-center text-[10px] font-black uppercase text-slate-400"><span>Route #${i+1}</span><button type="button" onclick="copyOne(${i}, this)" class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-bold">Copy</button></div>
                     <div class="font-bold text-[14px] leading-relaxed">${rt.join(' <span class="text-blue-500 opacity-40">→</span> ')}</div>
                     <div class="flex gap-2"><span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-black text-[9px] uppercase">${rt.join('').length} 文字</span></div>
                 </div>`).join('');
-            const stats = document.getElementById('stats');
-            stats.innerText = `${currentRoutes.length} ROUTES FOUND`;
-            stats.classList.remove('hidden');
+            const stats = document.getElementById('stats'); stats.innerText = `${currentRoutes.length} ROUTES FOUND`; stats.classList.remove('hidden');
         }
 
-        function getRouteText(rt) {
-            const includeLen = document.getElementById('copy_with_len').checked;
-            const base = rt.join(' → ');
-            return includeLen ? `${base} (${rt.join('').length}文字)` : base;
-        }
-
-        function showSuccess(btn, msg) {
-            const original = btn.innerText; btn.innerText = msg; btn.classList.add('success-btn');
-            setTimeout(() => { btn.innerText = original; btn.classList.remove('success-btn'); }, 1500);
-        }
-
+        function getRouteText(rt) { const includeLen = document.getElementById('copy_with_len').checked; const base = rt.join(' → '); return includeLen ? `${base} (${rt.join('').length}文字)` : base; }
+        function showSuccess(btn, msg) { const original = btn.innerText; btn.innerText = msg; btn.classList.add('success-btn'); setTimeout(() => { btn.innerText = original; btn.classList.remove('success-btn'); }, 1500); }
         async function execCopy(text, btn, successMsg) {
-            if (!text) return;
-            try {
-                if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); }
-                else {
-                    const textArea = document.createElement("textarea"); textArea.value = text;
-                    document.body.appendChild(textArea); textArea.select();
-                    document.execCommand('copy'); document.body.removeChild(textArea);
-                }
-                showSuccess(btn, successMsg);
-            } catch (err) { alert("コピー失敗"); }
+            try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); } else { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea); } showSuccess(btn, successMsg); } catch (err) { alert("コピー失敗"); }
         }
-
         function copyOne(i, btn) { execCopy(getRouteText(currentRoutes[i]), btn, "DONE!"); }
-        function copyTop() {
-            const limit = parseInt(document.getElementById('copy_limit').value) || 10;
-            const targets = currentRoutes.slice(0, limit);
-            if (!targets.length) return;
-            execCopy(targets.map(rt => getRouteText(rt)).join('\n'), document.getElementById('topCopyBtn'), "COPIED!");
-        }
-        function copyAll() {
-            if (!currentRoutes.length) return;
-            execCopy(currentRoutes.map(rt => getRouteText(rt)).join('\n'), document.getElementById('allCopyBtn'), "ALL DONE!");
-        }
+        function copyTop() { const limit = parseInt(document.getElementById('copy_limit').value) || 10; const targets = currentRoutes.slice(0, limit); if (!targets.length) return; execCopy(targets.map(rt => getRouteText(rt)).join('\n'), document.getElementById('topCopyBtn'), "COPIED!"); }
+        function copyAll() { if (!currentRoutes.length) return; execCopy(currentRoutes.map(rt => getRouteText(rt)).join('\n'), document.getElementById('allCopyBtn'), "ALL DONE!"); }
         window.onload = init;
     </script>
 </body>

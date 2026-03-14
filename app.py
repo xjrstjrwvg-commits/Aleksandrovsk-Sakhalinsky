@@ -75,6 +75,10 @@ def search():
     char_limit_mode = d.get('char_limit_mode', False)
     red_words = set(d.get('red_words', []))
     blue_words = set(d.get('blue_words', []))
+    
+    # 新規追加: 全単語縛りパラメータ
+    all_start_char = to_katakana(d.get('all_start_char', ""))
+    all_end_char = to_katakana(d.get('all_end_char', ""))
 
     exclude_chars = to_katakana(d.get('exclude_chars', ""))
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
@@ -94,6 +98,11 @@ def search():
     for cat in selected_cats:
         for w in DICTIONARY_MASTER.get(cat, []):
             if w in red_words: continue
+            
+            # 全単語縛りのチェック（プール作成時にも適用）
+            if all_start_char and get_clean_char(w, "head") != all_start_char: continue
+            if all_end_char and get_clean_char(w, "tail") != all_end_char: continue
+
             check_w = "".join([SMALL_TO_LARGE.get(c, c) for c in w]) if unify_small else w
             if any(ex in check_w for ex in ex_list): continue
             head_char = get_clean_char(w, "head")
@@ -111,9 +120,10 @@ def search():
     def solve(path, current_total_len):
         if time.time() - start_time > 15 or len(results) >= 1500: return
         
+        current_word = path[-1]
+
         if patterns:
             current_idx = len(path)
-            current_word = path[-1]
             pos_match = False
             has_pos_constraint = False
             for p in patterns:
@@ -138,20 +148,21 @@ def search():
                 else:
                     if not all(mc in full_current for mc in must_chars): return
             if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
+            
+            # 最終単語の末尾チェック（個別指定がある場合）
             last_tail = get_clean_char(path[-1], "tail")
             allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
             if end_char and last_tail not in allowed_ends: return
+            
             results.append(list(path))
             return
         
         is_odd_conn = (len(path) % 2 != 0)
         max_offset = len(path[-1].replace("ー", ""))
         
-        # 修正ポイント: 遡り接続の優先順位ルール
-        # まずは指定された pos_shift (通常 0) で探し、見つからない場合のみ遡る
+        # 遡り接続ルール：見つからない時だけ遡る
         base_offsets = [pos_shift]
         if auto_recovery:
-            # pos_shift より後ろ（より深く遡る）のオフセットを順次追加
             base_offsets += [i for i in range(pos_shift + 1, max_offset)]
 
         for offset in base_offsets:
@@ -178,12 +189,12 @@ def search():
                         found_at_this_offset = True
                         solve(path + [nxt], current_total_len + len(nxt))
             
-            # 「後に続く単語がある」なら、その時点でこのオフセットの探索で終了（より深くは遡らない）
             if found_at_this_offset:
                 break
 
     starts = [start_word] if (start_word in word_pool) else word_pool
     for w in sorted(starts):
+        # 個別開始字チェック（指定がある場合）
         if not start_word and start_char and get_clean_char(w, "head") != start_char: continue
         solve([w], len(w))
     return jsonify({"routes": results, "count": len(results)})

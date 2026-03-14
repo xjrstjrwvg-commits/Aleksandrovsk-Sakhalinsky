@@ -40,6 +40,7 @@
                 <input id="ec" placeholder="終了字" class="w-full">
             </div>
 
+            <!-- 全語縛り -->
             <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語開始字 (ア,イ..)</label>
@@ -67,33 +68,6 @@
                 <input id="pattern" placeholder="1*, 2ア*, *ン" class="w-full">
             </div>
 
-            <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="text-[9px] font-bold text-orange-400 uppercase ml-1">選択必須 (例: ン,ン:2)</label>
-                <textarea id="cc" placeholder="ン,ン:2" class="w-full h-16 resize-none text-[11px]"></textarea>
-                <div class="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-xl border border-orange-100 dark:border-orange-900/30">
-                    <input type="checkbox" id="exclusive_choice" class="w-4 h-4 cursor-pointer accent-orange-500">
-                    <label for="exclusive_choice" class="text-[9px] font-bold text-orange-600 uppercase cursor-pointer">出現合計を「ちょうど」に限定</label>
-                </div>
-            </div>
-
-            <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div class="flex justify-between items-center">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
-                    <input type="checkbox" id="use_shift" class="w-5 h-5 cursor-pointer accent-blue-600">
-                </div>
-                <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl">
-                    <div class="flex gap-2 font-bold text-[10px]">
-                        <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="shift_mode" value="abs" checked class="w-3 h-3"> ±</label>
-                        <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="shift_mode" value="normal" class="w-3 h-3"> 通常</label>
-                    </div>
-                    <div class="flex items-center gap-2 ml-auto">
-                        <button type="button" onclick="adjustVal('ks_abs',-1)" class="step-btn">-</button>
-                        <input type="number" id="ks_abs" value="1" class="w-10 text-center bg-transparent border-none text-sm font-bold">
-                        <button type="button" onclick="adjustVal('ks_abs',1)" class="step-btn">+</button>
-                    </div>
-                </div>
-            </div>
-
             <!-- 辞書管理 -->
             <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
                 <button type="button" onclick="document.getElementById('dict-manager').classList.toggle('hidden')" class="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 flex justify-between px-4 items-center">
@@ -108,7 +82,7 @@
                 </div>
             </div>
 
-            <!-- 設定: タイムアウト & 表示数 -->
+            <!-- 探索設定: タイムアウト & 件数制限 -->
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Timeout (秒)</label>
@@ -119,14 +93,17 @@
                     </div>
                 </div>
                 <div class="space-y-1 text-right">
-                    <label class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Max 表示数</label>
+                    <div class="flex justify-end items-center gap-1">
+                        <input type="checkbox" id="limit_enabled" checked class="w-3 h-3 accent-emerald-500">
+                        <label for="limit_enabled" class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest leading-none">Max 表示数</label>
+                    </div>
                     <div class="flex justify-end gap-2">
                         <input type="number" id="limit" value="1500" class="w-20 text-center text-sm font-bold">
                     </div>
                 </div>
             </div>
 
-            <!-- 下部オプション -->
+            <!-- 基本オプション -->
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">単語数</label>
@@ -186,9 +163,9 @@
         async function init() {
             if (localStorage.ultraSettings) {
                 const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','cc','ml','ps','ks_abs','ttl','timeout','limit'];
+                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','ml','ps','ks_abs','ttl','timeout','limit'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','use_shift'];
+                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','limit_enabled'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
                 if (s.dark_mode) document.documentElement.classList.add('dark');
                 if (s.wordStates) wordStates = s.wordStates;
@@ -244,13 +221,11 @@
                 sw: document.getElementById('sw').value, sc: document.getElementById('sc').value, asc: document.getElementById('asc').value,
                 mc: document.getElementById('mc').value, ec: document.getElementById('ec').value, aec: document.getElementById('aec').value,
                 exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value, pattern: document.getElementById('pattern').value,
-                cc: document.getElementById('cc').value, ml: document.getElementById('ml').value, ps: document.getElementById('ps').value, 
-                ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
-                timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
-                use_shift: document.getElementById('use_shift').checked, dark_mode: document.documentElement.classList.contains('dark'),
-                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
-                char_limit_mode: document.getElementById('char_limit_mode').checked, auto_recovery: document.getElementById('auto_recovery').checked,
-                wordStates: wordStates, cats: cats
+                ml: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
+                limit_enabled: document.getElementById('limit_enabled').checked,
+                dark_mode: document.documentElement.classList.contains('dark'), allow_daku: document.getElementById('allow_daku').checked,
+                allow_handaku: document.getElementById('allow_handaku').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
+                auto_recovery: document.getElementById('auto_recovery').checked, wordStates: wordStates, cats: cats
             });
         }
 
@@ -266,9 +241,10 @@
                         all_start_char: document.getElementById('asc').value, must_char: document.getElementById('mc').value,
                         end_char: document.getElementById('ec').value, all_end_char: document.getElementById('aec').value,
                         exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
-                        max_len: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
-                        pos_shift: document.getElementById('ps').value, use_shift: document.getElementById('use_shift').checked,
-                        allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
+                        max_len: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, 
+                        limit: document.getElementById('limit').value, limit_enabled: document.getElementById('limit_enabled').checked,
+                        pos_shift: 0, allow_daku: document.getElementById('allow_daku').checked,
+                        allow_handaku: document.getElementById('allow_handaku').checked,
                         auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
                         categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
                         red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')

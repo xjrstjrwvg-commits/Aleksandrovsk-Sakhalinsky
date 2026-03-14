@@ -23,15 +23,14 @@
         <header class="flex justify-between items-center py-1">
             <div class="flex items-center gap-3">
                 <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
-                <button onclick="toggleDarkMode()" class="text-xl p-1 hover:scale-110 transition-transform" title="Toggle Dark Mode">🌗</button>
+                <button onclick="toggleDarkMode()" class="text-xl p-1 hover:scale-110 transition-transform">🌗</button>
             </div>
             <div class="flex gap-2">
-                <button onclick="resetSettings()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">Reset</button>
-                <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">All Copy</button>
+                <button onclick="resetSettings()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 px-4 py-2 rounded-full text-[10px] font-bold uppercase">Reset</button>
+                <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase">All Copy</button>
             </div>
         </header>
 
-        <!-- メインパネル -->
         <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
             <input id="sw" placeholder="開始単語" class="w-full">
             
@@ -41,7 +40,6 @@
                 <input id="ec" placeholder="終了字" class="w-full">
             </div>
 
-            <!-- 全語縛りセクション（複数入力対応） -->
             <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語開始字 (ア,イ..)</label>
@@ -67,11 +65,6 @@
             <div class="space-y-1">
                 <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">ルートパターン</label>
                 <input id="pattern" placeholder="1*, 2ア*, *ン" class="w-full">
-            </div>
-
-            <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">グループ必須 (1行1組)</label>
-                <textarea id="gc" placeholder="アメリカ,イギリス" class="w-full h-16 resize-none text-[11px]"></textarea>
             </div>
 
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -101,7 +94,7 @@
                 </div>
             </div>
 
-            <!-- 辞書管理パネル -->
+            <!-- 辞書管理 -->
             <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
                 <button type="button" onclick="document.getElementById('dict-manager').classList.toggle('hidden')" class="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 flex justify-between px-4 items-center">
                     Dictionary Table <span id="dict-status" class="text-blue-500">OFF</span>
@@ -115,20 +108,25 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
+            <!-- 設定: タイムアウト & 表示数 -->
+            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点変換OK</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku" class="accent-blue-600"> 半濁点OK</label>
-                    <label class="flex items-center gap-1 cursor-pointer text-rose-600 font-black">
-                        <input type="checkbox" id="char_limit_mode" class="accent-rose-500 w-4 h-4"> 文字重複禁止
-                    </label>
+                    <label class="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Timeout (秒)</label>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="adjustVal('timeout',-5)" class="step-btn">-</button>
+                        <input type="number" id="timeout" value="15" class="w-10 text-center bg-transparent border-none text-sm font-bold">
+                        <button type="button" onclick="adjustVal('timeout',5)" class="step-btn">+</button>
+                    </div>
                 </div>
-                <div class="space-y-1">
-                    <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery" class="accent-indigo-500"> 遡り接続</label>
-                    <label class="flex items-center gap-1 cursor-pointer text-orange-600"><input type="checkbox" id="unify_small" class="accent-orange-500"> 小文字=大文字</label>
+                <div class="space-y-1 text-right">
+                    <label class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Max 表示数</label>
+                    <div class="flex justify-end gap-2">
+                        <input type="number" id="limit" value="1500" class="w-20 text-center text-sm font-bold">
+                    </div>
                 </div>
             </div>
 
+            <!-- 下部オプション -->
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">単語数</label>
@@ -148,10 +146,10 @@
             </div>
 
             <div class="flex flex-wrap gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="conj" class="accent-blue-600"> 共役排除</label>
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="rt" class="accent-blue-600"> 牛耕</label>
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="once" class="accent-blue-600"> 単一制約</label>
-                <label class="flex items-center gap-1 cursor-pointer text-emerald-600"><input type="checkbox" id="copy_with_len" checked> 文字数含コピー</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点OK</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku" class="accent-blue-600"> 半濁点OK</label>
+                <label class="flex items-center gap-1 cursor-pointer text-rose-600"><input type="checkbox" id="char_limit_mode" class="accent-rose-500"> 重複禁止</label>
+                <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery" class="accent-indigo-500"> 遡り接続</label>
             </div>
 
             <div class="flex items-center justify-between pt-2">
@@ -162,18 +160,6 @@
                 <button type="button" onclick="run()" id="btn" class="bg-blue-600 text-white font-black px-8 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">Explore</button>
             </div>
             
-            <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div class="flex items-center gap-2">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase italic">Top</label>
-                    <input type="number" id="copy_limit" value="10" class="!w-12 !p-1 text-center bg-white dark:bg-slate-900 border-none text-blue-500 font-black rounded-lg">
-                    <button type="button" onclick="copyTop()" id="topCopyBtn" class="bg-blue-600 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg uppercase transition-colors">Copy Top</button>
-                </div>
-                <select id="sort_order" class="bg-transparent font-bold text-blue-500 text-[10px] w-auto outline-none" onchange="display(); saveSettings();">
-                    <option value="len_asc">最短順</option>
-                    <option value="len_desc">最長順</option>
-                    <option value="kana">50音順</option>
-                </select>
-            </div>
             <div id="stats" class="text-center text-[10px] font-bold text-blue-500 hidden uppercase py-1"></div>
         </div>
         <div id="res" class="space-y-3 pb-20"></div>
@@ -200,11 +186,10 @@
         async function init() {
             if (localStorage.ultraSettings) {
                 const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','gc','cc','ml','ps','ks_abs','ttl','copy_limit'];
+                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','cc','ml','ps','ks_abs','ttl','timeout','limit'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                const checks = ['conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery','char_limit_mode','use_shift'];
+                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','use_shift'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
-                if (s.shift_mode) { const rb = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`); if (rb) rb.checked = true; }
                 if (s.dark_mode) document.documentElement.classList.add('dark');
                 if (s.wordStates) wordStates = s.wordStates;
                 document.querySelectorAll('input[name="cat"]').forEach(c => c.checked = (s.cats || ["country"]).includes(c.value));
@@ -259,34 +244,21 @@
                 sw: document.getElementById('sw').value, sc: document.getElementById('sc').value, asc: document.getElementById('asc').value,
                 mc: document.getElementById('mc').value, ec: document.getElementById('ec').value, aec: document.getElementById('aec').value,
                 exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value, pattern: document.getElementById('pattern').value,
-                gc: document.getElementById('gc').value, cc: document.getElementById('cc').value, ml: document.getElementById('ml').value,
-                ps: document.getElementById('ps').value, ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
-                copy_limit: document.getElementById('copy_limit').value, sort_order: document.getElementById('sort_order').value,
-                use_shift: document.getElementById('use_shift').checked, shift_mode: document.querySelector('input[name="shift_mode"][value]:checked').value,
-                dark_mode: document.documentElement.classList.contains('dark'), conj: document.getElementById('conj').checked,
-                rt: document.getElementById('rt').checked, once: document.getElementById('once').checked, copy_with_len: document.getElementById('copy_with_len').checked,
+                cc: document.getElementById('cc').value, ml: document.getElementById('ml').value, ps: document.getElementById('ps').value, 
+                ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
+                timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
+                use_shift: document.getElementById('use_shift').checked, dark_mode: document.documentElement.classList.contains('dark'),
                 allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
-                unify_small: document.getElementById('unify_small').checked, exclusive_choice: document.getElementById('exclusive_choice').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
+                char_limit_mode: document.getElementById('char_limit_mode').checked, auto_recovery: document.getElementById('auto_recovery').checked,
                 wordStates: wordStates, cats: cats
             });
         }
 
-        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(-50, parseInt(el.value) + delta); saveSettings(); }
+        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(1, parseInt(el.value) + delta); saveSettings(); }
 
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
-                const patterns = document.getElementById('pattern').value.split(',').map(p => {
-                    const s = p.trim(); const m = s.match(/^(\d+)(.*)$/);
-                    return m ? m[1] + to_katakana(m[2]) : to_katakana(s);
-                }).filter(p => p);
-
-                const cclines = document.getElementById('cc').value.split('\n').map(l => {
-                    const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
-                    return items.length ? items.map(item => item.includes(':') ? to_katakana(item.split(':')[0]) + ':' + item.split(':')[1] : to_katakana(item)) : null;
-                }).filter(g => g);
-
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -294,15 +266,11 @@
                         all_start_char: document.getElementById('asc').value, must_char: document.getElementById('mc').value,
                         end_char: document.getElementById('ec').value, all_end_char: document.getElementById('aec').value,
                         exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
-                        patterns: patterns, group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length),
-                        choice_constraints: cclines, exclusive_choice: document.getElementById('exclusive_choice').checked,
-                        auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
-                        max_len: document.getElementById('ml').value, target_total_len: document.getElementById('ttl').value ? parseInt(document.getElementById('ttl').value) : null,
+                        max_len: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
                         pos_shift: document.getElementById('ps').value, use_shift: document.getElementById('use_shift').checked,
-                        shift_mode: document.querySelector('input[name="shift_mode"]:checked').value, ks_abs: document.getElementById('ks_abs').value,
                         allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
-                        unify_small: document.getElementById('unify_small').checked, round_trip: document.getElementById('rt').checked,
-                        once_constraint: document.getElementById('once').checked, categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
+                        auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
+                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
                         red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
                     })
                 });
@@ -311,27 +279,16 @@
         }
 
         function display() {
-            const order = document.getElementById('sort_order').value;
-            if (order === 'len_asc') currentRoutes.sort((a, b) => a.join('').length - b.join('').length || a.join('').localeCompare(b.join('')));
-            else if (order === 'len_desc') currentRoutes.sort((a, b) => b.join('').length - a.join('').length || a.join('').localeCompare(b.join('')));
-            else if (order === 'kana') currentRoutes.sort((a, b) => a.join('').localeCompare(b.join('')));
             document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `
-                <div class="glass p-4 rounded-[20px] flex flex-col gap-2 relative animate-in fade-in slide-in-from-bottom-2">
+                <div class="glass p-4 rounded-[20px] flex flex-col gap-2 relative">
                     <div class="flex justify-between items-center text-[10px] font-black uppercase text-slate-400"><span>Route #${i+1}</span><button type="button" onclick="copyOne(${i}, this)" class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full font-bold">Copy</button></div>
                     <div class="font-bold text-[14px] leading-relaxed">${rt.join(' <span class="text-blue-500 opacity-40">→</span> ')}</div>
                     <div class="flex gap-2"><span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-black text-[9px] uppercase">${rt.join('').length} 文字</span></div>
                 </div>`).join('');
             const stats = document.getElementById('stats'); stats.innerText = `${currentRoutes.length} ROUTES FOUND`; stats.classList.remove('hidden');
         }
-
-        function getRouteText(rt) { const includeLen = document.getElementById('copy_with_len').checked; const base = rt.join(' → '); return includeLen ? `${base} (${rt.join('').length}文字)` : base; }
-        function showSuccess(btn, msg) { const original = btn.innerText; btn.innerText = msg; btn.classList.add('success-btn'); setTimeout(() => { btn.innerText = original; btn.classList.remove('success-btn'); }, 1500); }
-        async function execCopy(text, btn, successMsg) {
-            try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); } else { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea); } showSuccess(btn, successMsg); } catch (err) { alert("コピー失敗"); }
-        }
-        function copyOne(i, btn) { execCopy(getRouteText(currentRoutes[i]), btn, "DONE!"); }
-        function copyTop() { const limit = parseInt(document.getElementById('copy_limit').value) || 10; const targets = currentRoutes.slice(0, limit); if (!targets.length) return; execCopy(targets.map(rt => getRouteText(rt)).join('\n'), document.getElementById('topCopyBtn'), "COPIED!"); }
-        function copyAll() { if (!currentRoutes.length) return; execCopy(currentRoutes.map(rt => getRouteText(rt)).join('\n'), document.getElementById('allCopyBtn'), "ALL DONE!"); }
+        function copyOne(i, btn) { navigator.clipboard.writeText(currentRoutes[i].join(' → ')); }
+        function copyAll() { navigator.clipboard.writeText(currentRoutes.map(r => r.join(' → ')).join('\n')); }
         window.onload = init;
     </script>
 </body>

@@ -35,25 +35,21 @@
         <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
             <input id="sw" placeholder="開始単語" class="w-full">
             
-            <!-- 開始字・終了字（全語縛り対応） -->
             <div class="grid grid-cols-3 gap-2">
+                <input id="sc" placeholder="開始字" class="w-full">
+                <input id="mc" placeholder="必須文字" class="w-full">
+                <input id="ec" placeholder="終了字" class="w-full">
+            </div>
+
+            <!-- 全語縛りセクション（複数入力対応） -->
+            <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
-                    <label class="text-[8px] font-bold text-slate-400 uppercase ml-1">開始字 / 全語始</label>
-                    <div class="flex gap-1">
-                        <input id="sc" placeholder="始" class="w-1/2 !p-2">
-                        <input id="asc" placeholder="全" class="w-1/2 !p-2 border-blue-500/30 border">
-                    </div>
+                    <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語開始字 (ア,イ..)</label>
+                    <input id="asc" placeholder="ア,カ,サ" class="w-full">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[8px] font-bold text-slate-400 uppercase ml-1">必須文字</label>
-                    <input id="mc" placeholder="ア:2" class="w-full">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[8px] font-bold text-slate-400 uppercase ml-1">終了字 / 全語終</label>
-                    <div class="flex gap-1">
-                        <input id="ec" placeholder="終" class="w-1/2 !p-2">
-                        <input id="aec" placeholder="全" class="w-1/2 !p-2 border-blue-500/30 border">
-                    </div>
+                    <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語終了字 (ン,ガ..)</label>
+                    <input id="aec" placeholder="ン,イ,ク" class="w-full">
                 </div>
             </div>
 
@@ -87,7 +83,6 @@
                 </div>
             </div>
 
-            <!-- 50音ずらし -->
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="flex justify-between items-center">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
@@ -267,7 +262,7 @@
                 gc: document.getElementById('gc').value, cc: document.getElementById('cc').value, ml: document.getElementById('ml').value,
                 ps: document.getElementById('ps').value, ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
                 copy_limit: document.getElementById('copy_limit').value, sort_order: document.getElementById('sort_order').value,
-                use_shift: document.getElementById('use_shift').checked, shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
+                use_shift: document.getElementById('use_shift').checked, shift_mode: document.querySelector('input[name="shift_mode"][value]:checked').value,
                 dark_mode: document.documentElement.classList.contains('dark'), conj: document.getElementById('conj').checked,
                 rt: document.getElementById('rt').checked, once: document.getElementById('once').checked, copy_with_len: document.getElementById('copy_with_len').checked,
                 allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
@@ -286,6 +281,7 @@
                     const s = p.trim(); const m = s.match(/^(\d+)(.*)$/);
                     return m ? m[1] + to_katakana(m[2]) : to_katakana(s);
                 }).filter(p => p);
+
                 const cclines = document.getElementById('cc').value.split('\n').map(l => {
                     const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
                     return items.length ? items.map(item => item.includes(':') ? to_katakana(item.split(':')[0]) + ':' + item.split(':')[1] : to_katakana(item)) : null;

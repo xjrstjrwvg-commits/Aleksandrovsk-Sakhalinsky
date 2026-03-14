@@ -43,18 +43,34 @@
             <!-- 全語縛り -->
             <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語開始字 (ア,イ..)</label>
-                    <input id="asc" placeholder="ア,カ,サ" class="w-full">
+                    <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語開始字</label>
+                    <input id="asc" placeholder="ア,カ" class="w-full">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語終了字 (ン,ガ..)</label>
-                    <input id="aec" placeholder="ン,イ,ク" class="w-full">
+                    <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語終了字</label>
+                    <input id="aec" placeholder="ン,イ" class="w-full">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
+            <!-- 制約テキストエリア -->
+            <div class="grid grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">使用不可文字 (全体)</label>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1 tracking-widest">グループ必須</label>
+                    <textarea id="gc" placeholder="1行1組" class="w-full h-16 resize-none text-[10px]"></textarea>
+                </div>
+                <div class="space-y-1 text-orange-600">
+                    <label class="text-[9px] font-bold uppercase ml-1 tracking-widest">選択必須</label>
+                    <textarea id="cc" placeholder="ン,ン:2" class="w-full h-16 resize-none text-[10px]"></textarea>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-xl border border-orange-100 dark:border-orange-900/30">
+                <input type="checkbox" id="exclusive_choice" class="w-4 h-4 cursor-pointer accent-orange-500">
+                <label for="exclusive_choice" class="text-[9px] font-bold text-orange-600 uppercase cursor-pointer">出現合計を「ちょうど」に限定</label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">使用不可文字</label>
                     <input id="exc" placeholder="ン,ガ" class="w-full">
                 </div>
                 <div class="space-y-1">
@@ -63,9 +79,23 @@
                 </div>
             </div>
 
-            <div class="space-y-1">
-                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">ルートパターン</label>
-                <input id="pattern" placeholder="1*, 2ア*, *ン" class="w-full">
+            <!-- 50音ずらし -->
+            <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
+                    <input type="checkbox" id="use_shift" class="w-5 h-5 cursor-pointer accent-blue-600">
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-xl">
+                    <div class="flex gap-2 font-bold text-[10px]">
+                        <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="shift_mode" value="abs" checked class="w-3 h-3"> ±</label>
+                        <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="shift_mode" value="normal" class="w-3 h-3"> 通常</label>
+                    </div>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <button type="button" onclick="adjustVal('ks_abs',-1)" class="step-btn">-</button>
+                        <input type="number" id="ks_abs" value="1" class="w-10 text-center bg-transparent border-none text-sm font-bold">
+                        <button type="button" onclick="adjustVal('ks_abs',1)" class="step-btn">+</button>
+                    </div>
+                </div>
             </div>
 
             <!-- 辞書管理 -->
@@ -75,14 +105,14 @@
                 </button>
                 <div id="dict-manager" class="hidden space-y-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                     <div class="flex gap-2">
-                        <button type="button" onclick="bulkSet('white')" class="flex-1 py-2 bg-white dark:bg-slate-700 rounded-lg text-[9px] font-bold shadow-sm">全開放(白)</button>
-                        <button type="button" onclick="bulkSet('red')" class="flex-1 py-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-lg text-[9px] font-bold shadow-sm">全禁止(赤)</button>
+                        <button type="button" onclick="bulkSet('white')" class="flex-1 py-2 bg-white dark:bg-slate-700 rounded-lg text-[9px] font-bold shadow-sm">全開放</button>
+                        <button type="button" onclick="bulkSet('red')" class="flex-1 py-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-lg text-[9px] font-bold shadow-sm">全禁止</button>
                     </div>
                     <div id="dict-list" class="grid grid-cols-2 gap-1 custom-scroll p-1"></div>
                 </div>
             </div>
 
-            <!-- 探索設定: タイムアウト & 件数制限 -->
+            <!-- 探索設定 -->
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Timeout (秒)</label>
@@ -97,13 +127,22 @@
                         <input type="checkbox" id="limit_enabled" checked class="w-3 h-3 accent-emerald-500">
                         <label for="limit_enabled" class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest leading-none">Max 表示数</label>
                     </div>
-                    <div class="flex justify-end gap-2">
-                        <input type="number" id="limit" value="1500" class="w-20 text-center text-sm font-bold">
-                    </div>
+                    <input type="number" id="limit" value="1500" class="w-20 text-center text-sm font-bold mt-1">
                 </div>
             </div>
 
-            <!-- 基本オプション -->
+            <!-- オプション -->
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku"> 濁点OK</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku"> 半濁点OK</label>
+                <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery"> 遡り接続</label>
+                <label class="flex items-center gap-1 cursor-pointer text-orange-600"><input type="checkbox" id="unify_small"> 大文字=小文字</label>
+                <label class="flex items-center gap-1 cursor-pointer text-blue-600"><input type="checkbox" id="rt"> 牛耕</label>
+                <label class="flex items-center gap-1 cursor-pointer text-blue-600"><input type="checkbox" id="once"> 単一制約</label>
+                <label class="flex items-center gap-1 cursor-pointer text-rose-600"><input type="checkbox" id="char_limit_mode"> 重複禁止</label>
+                <label class="flex items-center gap-1 cursor-pointer text-emerald-600"><input type="checkbox" id="copy_with_len" checked> 文字数含コピー</label>
+            </div>
+
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">単語数</label>
@@ -120,13 +159,6 @@
                         <input type="number" id="ttl" placeholder="計" class="w-12 text-center text-sm font-bold">
                     </div>
                 </div>
-            </div>
-
-            <div class="flex flex-wrap gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点OK</label>
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku" class="accent-blue-600"> 半濁点OK</label>
-                <label class="flex items-center gap-1 cursor-pointer text-rose-600"><input type="checkbox" id="char_limit_mode" class="accent-rose-500"> 重複禁止</label>
-                <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery" class="accent-indigo-500"> 遡り接続</label>
             </div>
 
             <div class="flex items-center justify-between pt-2">
@@ -163,9 +195,9 @@
         async function init() {
             if (localStorage.ultraSettings) {
                 const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','ml','ps','ks_abs','ttl','timeout','limit'];
+                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','ml','ps','ks_abs','ttl','timeout','limit','gc','cc'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','limit_enabled'];
+                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','limit_enabled','unify_small','rt','once','copy_with_len','use_shift','exclusive_choice'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
                 if (s.dark_mode) document.documentElement.classList.add('dark');
                 if (s.wordStates) wordStates = s.wordStates;
@@ -222,10 +254,15 @@
                 mc: document.getElementById('mc').value, ec: document.getElementById('ec').value, aec: document.getElementById('aec').value,
                 exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value, pattern: document.getElementById('pattern').value,
                 ml: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
-                limit_enabled: document.getElementById('limit_enabled').checked,
-                dark_mode: document.documentElement.classList.contains('dark'), allow_daku: document.getElementById('allow_daku').checked,
-                allow_handaku: document.getElementById('allow_handaku').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked, wordStates: wordStates, cats: cats
+                gc: document.getElementById('gc').value, cc: document.getElementById('cc').value,
+                ps: document.getElementById('ps').value, ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
+                limit_enabled: document.getElementById('limit_enabled').checked, use_shift: document.getElementById('use_shift').checked,
+                unify_small: document.getElementById('unify_small').checked, rt: document.getElementById('rt').checked,
+                once: document.getElementById('once').checked, copy_with_len: document.getElementById('copy_with_len').checked,
+                exclusive_choice: document.getElementById('exclusive_choice').checked, dark_mode: document.documentElement.classList.contains('dark'),
+                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
+                char_limit_mode: document.getElementById('char_limit_mode').checked, auto_recovery: document.getElementById('auto_recovery').checked,
+                wordStates: wordStates, cats: cats
             });
         }
 
@@ -234,6 +271,11 @@
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
+                const cclines = document.getElementById('cc').value.split('\n').map(l => {
+                    const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
+                    return items.length ? items.map(item => item.includes(':') ? to_katakana(item.split(':')[0]) + ':' + item.split(':')[1] : to_katakana(item)) : null;
+                }).filter(g => g);
+
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -243,10 +285,14 @@
                         exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
                         max_len: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, 
                         limit: document.getElementById('limit').value, limit_enabled: document.getElementById('limit_enabled').checked,
-                        pos_shift: 0, allow_daku: document.getElementById('allow_daku').checked,
-                        allow_handaku: document.getElementById('allow_handaku').checked,
+                        pos_shift: parseInt(document.getElementById('ps').value), use_shift: document.getElementById('use_shift').checked,
+                        ks_abs: parseInt(document.getElementById('ks_abs').value), shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
+                        allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
                         auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
-                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
+                        unify_small: document.getElementById('unify_small').checked, round_trip: document.getElementById('rt').checked,
+                        once_constraint: document.getElementById('once').checked, exclusive_choice: document.getElementById('exclusive_choice').checked,
+                        group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length),
+                        choice_constraints: cclines, categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
                         red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
                     })
                 });
@@ -263,8 +309,19 @@
                 </div>`).join('');
             const stats = document.getElementById('stats'); stats.innerText = `${currentRoutes.length} ROUTES FOUND`; stats.classList.remove('hidden');
         }
-        function copyOne(i, btn) { navigator.clipboard.writeText(currentRoutes[i].join(' → ')); }
-        function copyAll() { navigator.clipboard.writeText(currentRoutes.map(r => r.join(' → ')).join('\n')); }
+        function copyOne(i, btn) { 
+            const rt = currentRoutes[i];
+            const base = rt.join(' → ');
+            const text = document.getElementById('copy_with_len').checked ? `${base} (${rt.join('').length}文字)` : base;
+            navigator.clipboard.writeText(text); 
+        }
+        function copyAll() { 
+            const text = currentRoutes.map(rt => {
+                const base = rt.join(' → ');
+                return document.getElementById('copy_with_len').checked ? `${base} (${rt.join('').length}文字)` : base;
+            }).join('\n');
+            navigator.clipboard.writeText(text); 
+        }
         window.onload = init;
     </script>
 </body>

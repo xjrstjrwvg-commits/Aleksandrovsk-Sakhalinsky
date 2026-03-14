@@ -17,8 +17,8 @@ HANDAKU_MAP = {"ハ":"パ", "ヒ":"ピ", "フ":"プ", "ヘ":"ペ", "ホ":"ポ"}
 
 # --- 辞書データ ---
 DICTIONARY_MASTER = {
-    "country": ["アイスランド", "アイルランド", "アゼルバイジャン", "アフガニスタン", "アメリカ", "アラブシュチョウコクレンポウ", "アルジェリア", "アルゼンチン", "アルバニア", "アルメニア", "アンゴラ", "アンティグアバーブーダ", "アンドラ", "イエメン", "イギリス", "イスラエル", "イタリア", "イラク", "イラン", "インド", "インドネシア", "ウガンダ", "ウクライナ", "ウズベキスタン", "ウルグアイ", "エクアドル", "エジプト", "エストニア", "エスワティニ", "エチオピア", "エリトリア", "エルサルバドル", "オーストラリア", "オーストリア", "オマーン", "オランダ", "ガーナ", "カーボベルデ", "ガイアナ", "カザフスタン", "カタール", "カナダ", "ガボン", "カメルーン", "ガンビア", "カンボジア", "キタマケドニア", "ギニア", "ギニアビサウ", "キプロス", "キューバ", "ギリシャ", "キリバス", "キリバス", "キルギス", "グアテマラ", "クウェート", "クックショトウ", "グレナダ", "クロアチア", "ケニア", "コートジボワール", "コスタリカ", "コソボ", "コモロ", "コロンビア", "コンゴキョウワコク", "コンゴミンシュキョウワコク", "サウジアラビア", "サモア", "サントメプリンシペ", "ザンビア", "サンマリノ", "シエラレオネ", "ジブチ", "ジャマイカ", "ジョージア", "シリア", "シンガポール", "ジンバブエ", "スイス", "スウェーデン", "スーダン", "スペイン", "スリナム", "スリランカ", "スロバキア", "スロベニア", "セーシェル", "セキドウギニア", "セネガル", "セルビア", "セントクリストファーネービス", "セントビンセントグレナディーンショトウ", "セントルシア", "ソマリア", "ソロモンショトウ", "タイ", "ダイカンミンコク", "タジキスタン", "タンザニア", "チェコ", "チャド", "チュウオウアフリカ", "チュウカジンミンキョウワコク", "チュニジア", "チョウセンミンシュシュギジンミンキョウワコク", "チリ", "ツバル", "デンマーク", "ドイツ", "トーゴ", "ドミニカキョウワコク", "ドミニカコク", "トリニダードトバゴ", "トルクメニスタン", "トルコ", "トンガ", "ナイジェリア", "ナウル", "ナミビア", "ニウエ", "ニカラグア", "ニジェール", "ニホン", "ニュージーランド", "ネパール", "ノルウェー", "バーレーン", "ハイチ", "パキスタン", "バチカンシコク", "パナマ", "バヌアツ", "バハマ", "パプアニューギニア", "パラオ", "パラグアイ", "バルバドス", "ハンガリー", "バングラデシュ", "ヒガシティモール", "フィジー", "フィリピン", "フィンランド", "ブータン", "ブラジル", "フランス", "ブルガリア", "ブルキナファソ", "ブルネイ", "ブルンジ", "ベトナム", "ベナン", "ベネズエラ", "ベラルーシ", "ベリーズ", "ペルー", "ベルギー", "ポーランド", "ボスニアヘルツェゴビナ", "ボツワナ", "ボリビア", "ポルトガル", "ホンジュラス", "マーシャルショトウ", "マダガスカル", "マラウイ", "マリ", "マルタ", "マレーシア", "ミクロネシアレンポウ", "ミナミアフリカキョウワコク", "ミナミスーダン", "ミャンマー", "メキシコ", "モーリシャス", "モーリタニア", "モザンビーク", "モナコ", "モルディブ", "モルドバ", "モロッコ", "モンゴル", "モンテネグロ", "ヨルダン", "ラオス", "ラトビア", "リトアニア", "リビア", "リヒテンシュタイン", "リベリア", "ルーマニア", "ルクセンブルク", "ルワンダ", "レソト", "レバノン", "ロシア"],
-    "capital": ["アクラ", "アシガバット", "アスタナ", "アスマラ", "アスンシオン", "アディスアベバ", "アテネ", "アバルア", "アピア", "アブジャ", "アブダビ", "アムステルダム", "アルジェ", "アロフィ", "アンカラ", "アンタナナリボ", "アンドララベリャ", "アンマン", "イスラマバード", "ウィーン", "ウィントフック", "ウェリントン", "ウランバートル", "エルサレム", "エレバン", "オスロ", "オタワ", "カイロ", "カストリーズ", "カトマンズ", "カブール", "カラカス", "カンパラ", "キーウ", "キガリ", "キシナウ", "ギテガ", "キト", "キャンベラ", "キングスタウン", "キングストン", "キンシャサ", "グアテマラシティ", "クアラリンプール", "クウェート", "コナクリ", "コペンハーゲン", "ザグレブ", "サヌア", "サラエボ", "サンサルバドル", "サンティアゴ", "サントドミンゴ", "サントメ", "サンホセ", "サンマリノ", "ジブチ", "ジャカルタ", "ジュバ", "ジョージタウン", "シンガポール", "スコピエ", "ストックホルム", "スバ", "スリジャヤワルダナプラコッテ", "セントジョージズ", "セントジョンズ", "ソウル", "ソフィア", "ダカール", "タシケント", "ダッカ", "ダブリン", "ダマスカス", "タラワ", "タリン", "チュニス", "ティラナ", "ディリ", "ティンプー", "テグシガルパ", "テヘラン", "デリー", "トウキョウ", "ドゥシャンベ", "ドーハ", "ドドマ", "トビリシ", "トリポリ", "ナイロビ", "ナッソー", "ニアメ", "ニコシア", "ヌアクショット", "ヌクアロファ", "ネピドー", "バクー", "バグダッド", "バセテール", "パナマシティ", "バチカン", "ハノイ", "ハバナ", "ハボローネ", "バマコ", "パラマリボ", "ハラレ", "パリ", "パリキール", "ハルツーム", "バレッタ", "バンギ", "バンコク", "バンジュール", "バンダルスリブガワン", "ビエンチャン", "ビクトリア", "ビサウ", "ビシュケク", "ピョンヤン", "ビリニュス", "ファドゥーツ", "ブエノスアイレス", "ブカレスト", "ブダペスト", "フナフティ", "プノンペン", "プライア", "ブラザビル", "ブラジリア", "ブラチスラバ", "プラハ", "フリータウン", "プリシュティナ", "ブリッジタウン", "ブリュッセル", "プレトリア", "ベイルート", "ベオグラード", "ペキン", "ヘルシンキ", "ベルモパン", "ベルリン", "ベルン", "ポートオブスペイン", "ポートビラ", "ポートモレスビー", "ポートルイス", "ボゴタ", "ポドゴリツァ", "ホニアラ", "ポルトープランス", "ポルトノボ", "マジュロ", "マスカット", "マセル", "マドリード", "マナーマ", "マナグア", "マニラ", "マプト", "マラボ", "マルキョク", "マレ", "ミンスク", "ムババーネ", "メキシコシティ", "モガディシュ", "モスクワ", "モナコ", "モロニ", "モンテビデオ", "モンロビア", "ヤウンデ", "ヤムスクロ", "ヤレン", "ラパス", "ラバト", "リーブルビル", "リガ", "リスボン", "リマ", "リヤド", "リュブリャナ", "リロングウェ", "ルアンダ", "ルクセンブルク", "ルサカ", "レイキャビク", "ローマ", "ロゾー", "ロメ", "ロンドン", "ワガドゥグー", "ワシントンディーシー", "ワルシャワ", "ンジャメナ"]
+    "country": ["アイスランド", "アイルランド", "アゼルバイジャン", "アフガニスタン", "アメリカ", "アラブシュチョウコクレンポウ", "アルジェリア", "アルゼンチン", "アルバニア", "アルメニア", "アンゴラ", "アンティグアバーブーダ", "アンドラ", "イエメン", "イギリス", "イスラエル", "イタリア", "イラク", "イラン", "インド", "インドネシア", "ウガンダ", "ウクライナ", "ウズベキスタン", "ウルグアイ", "エクアドル", "エジプト", "エストニア", "エスワティニ", "エチオピア", "エリトリア", "エルサルバドル", "オーストラリア", "オーストリア", "オマーン", "オランダ", "ガーナ", "カーボベルデ", "ガイアナ", "カザフスタン", "カタール", "カナダ", "ガボン", "カメルーン", "ガンビア", "カンボジア", "キタマケドニア", "ギニア", "ギニアビサウ", "キプロス", "キューバ", "ギリシャ", "キリバス", "キルギス", "グアテマラ", "クウェート", "クックショトウ", "グレナダ", "クロアチア", "ケニア", "コートジボワール", "コスタリカ", "コソボ", "コモロ", "コロンビア", "コンゴキョウワコク", "コンゴミンシュキョウワコク", "サウジアラビア", "サモア", "サントメプリンシペ", "ザンビア", "サンマリノ", "シエラレオネ", "ジブチ", "ジャマイカ", "ジョージア", "シリア", "シンガポール", "ジンバブエ", "スイス", "スウェーデン", "スーダン", "スペイン", "スリナム", "スリランカ", "スロバキア", "スロベニア", "セーシェル", "セキドウギニア", "セネガル", "セルビア", "セントクリストファーネービス", "セントビンセントグレナディーンショトウ", "セントルシア", "ソマリア", "ソロモンショトウ", "タイ", "ダイカンミンコク", "タジキスタン", "タンザニア", "チェコ", "チャド", "チュウオウアフリカ", "チュウカジンミンキョウワコク", "チュニジア", "チョウセンミンシュシュギジンミンキョウワコク", "チリ", "ツバル", "デンマーク", "ドイツ", "トーゴ", "ドミニカキョウワコク", "ドミニカコク", "トリニダードトバゴ", "トルクメニスタン", "トルコ", "トンガ", "ナイジェリア", "ナウル", "ナミビア", "ニウエ", "ニカラグア", "ニジェール", "ニホン", "ニュージーランド", "ネパール", "ノルウェー", "バーレーン", "ハイチ", "パキスタン", "バチカンシコク", "パナマ", "バヌアツ", "バハマ", "パプアニューギニア", "パラオ", "パラグアイ", "バルバドス", "ハンガリー", "バングラデシュ", "ヒガシティモール", "フィジー", "フィリピン", "フィンランド", "ブータン", "ブラジル", "フランス", "ブルガリア", "ブルキナファソ", "ブルネイ", "ブルンジ", "ベトナム", "ベナン", "ベネズエラ", "ベラルーシ", "ベリーズ", "ペルー", "ベルギー", "ポーランド", "ボスニアヘルツェゴビナ", "ボツワナ", "ボリビア", "ポルトガル", "ホンジュラス", "マーシャルショトウ", "マダガスカル", "マラウイ", "マリ", "マルタ", "マレーシア", "ミクロネシアレンポウ", "ミナミアフリカキョウワコク", "ミナミスーダン", "ミャンマー", "メキシコ", "モーリシャス", "モーリタニア", "モザンビーク", "モナコ", "モルディブ", "モルドバ", "モロッコ", "モンゴル", "モンテネグロ", "ヨルダン", "ラオス", "ラトビア", "リトアニア", "リビア", "リヒテンシュタイン", "リベリア", "ルーマニア", "ルクセンブルク", "ルワンダ", "レソト", "レバノン", "ロシア"],
+    "capital": ["アクラ", "アシガバット", "アスタナ", "アスマラ", "アスンシオン", "アディスアベバ", "アテネ", "アバルア", "アピア", "アブジャ", "アブダビ", "アムステルダム", "アルジェ", "アロフィ", "アンカラ", "アンタナナリボ", "アンドララベリャ", "アンマン", "イスラマバード", "ウィーン", "ウィントフック", "ウェリントン", "ウランバートル", "エルサレム", "エレバン", "オスロ", "オタワ", "カイロ", "カストリーズ", "カトマンズ", "カブール", "カラカス", "カンパラ", "キーウ", "キガリ", "キシナウ", "ギテガ", "キト", "キャンベラ", "キングスタウン", "キングストン", "キンシャサ", "グアテマラシティ", "クアラリンプール", "クウェート", "コナクリ", "コペンハーゲン", "ザグレブ", "サヌア", "サラエボ", "サンサルバドル", "サンティアゴ", "サントドミンゴ", "サントメ", "サンホセ", "サンマリノ", "ジブチ", "ジャカルタ", "ジュバ", "ジョージタウン", "シンガポール", "スコピエ", "ストックホルム", "スバ", "スリジャヤワルダナプラコッテ", "セントジョージズ", "セントジョンズ", "ソウル", "ソフィア", "ダカール", "タシケント", "ダッカ", "ダブリン", "ダマスカス", "タラワ", "タリン", "チュニス", "ティラナ", "ディリ", "ティンプー", "テグシガルパ", "テヘラン", "デリー", "トウキョウ", "ドゥシャンベ", "ドーハ", "ドドマ", "トビリシ", "トリポリ", "ナイロビ", "ナッソー", "ニアメ", "ニコシア", "ヌアクショット", "ヌクアロファ", "ネピドー", "バクー", "バグダッド", "バセテール", "パナマシティ", "バチカン", "ハノイ", "ハバナ", "ハボローネ", "バマコ", "パラマリボ", "ハラレ", "パリ", "パリキール", "ハルツーム", "バレッタ", "バンギ", "バンコク", "バンジュール", "バンダルスリブガワン", "ビエンチャン", "ビクトリア", "ビサウ", "ビシュケク", "ピョンヤン", "ビリニュス", "ファドゥーツ", "ブエノスアイレス", "ブカレスト", "ブダペスト", "フナフティ", "プノンペン", "プライア", "ブラザビル", "ブラジリア", "ブラチスラバ", "プラハ", "フリータウン", "プリシュティナ", "ブリッジタウン", "ブリュッセル", "プレトリア", "ベイルート", "ベオグラード", "ペキン", "ヘルシンキ", "ベルモパン", "ベルリン", "ベルン", "ポートオブスペイン", "ポートビラ", "ポートモレスビー", "ポートルイス", "ボゴタ", "ポドゴリツァ", "ホニアラ", "ポルトープランス", "ポルトノボ", "マジュロ", "マスカット", "マセル", "マドリード", "マナーマ", "マナーマ", "マナグア", "マニラ", "マプト", "マラボ", "マルキョク", "マレ", "ミンスク", "ムババーネ", "メキシコシティ", "モガディシュ", "モスクワ", "モナコ", "モロニ", "モンテビデオ", "モンロビア", "ヤウンデ", "ヤムスクロ", "ヤレン", "ラパス", "ラバト", "リーブルビル", "リガ", "リスボン", "リマ", "リヤド", "リュブリャナ", "リロングウェ", "ルアンダ", "ルクセンブルク", "ルサカ", "レイキャビク", "ローマ", "ロゾー", "ロメ", "ロンドン", "ワガドゥグー", "ワシントンディーシー", "ワルシャワ", "ンジャメナ"]
 }
 
 # --- ユーティリティ ---
@@ -60,10 +60,9 @@ def get_dictionary(): return jsonify(DICTIONARY_MASTER)
 @app.route('/search', methods=['POST'])
 def search():
     d = request.json
-    # 動的設定の取得
     search_timeout = int(d.get('timeout', 15))
     result_limit = int(d.get('limit', 1500))
-    limit_enabled = d.get('limit_enabled', True) # 件数制限のON/OFF
+    limit_enabled = d.get('limit_enabled', True)
 
     max_len = int(d.get('max_len', 5))
     pos_shift = int(d.get('pos_shift', 0))
@@ -73,11 +72,16 @@ def search():
     allow_daku = d.get('allow_daku', False)
     allow_handaku = d.get('allow_handaku', False)
     unify_small = d.get('unify_small', False)
+    
+    # 復元: 制約リスト
     choice_constraints = d.get('choice_constraints', [])
+    group_constraints = d.get('group_constraints', [])
     exclusive_choice = d.get('exclusive_choice', False)
     auto_recovery = d.get('auto_recovery', False)
-    patterns = d.get('patterns', [])
+    round_trip = d.get('round_trip', False) # 牛耕
+    once_constraint = d.get('once_constraint', False) # 単一制約
     char_limit_mode = d.get('char_limit_mode', False)
+
     red_words = set(d.get('red_words', []))
     blue_words = set(d.get('blue_words', []))
     
@@ -90,11 +94,10 @@ def search():
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
     ban_start_chars = to_katakana(d.get('ban_start_chars', ""))
     bs_list = [c.strip() for c in re.split('[、,]', ban_start_chars) if c.strip()]
-    group_constraints = d.get('group_constraints', [])
+    
     raw_mc = to_katakana(d.get('must_char', ""))
     must_chars = [c for c in re.split('[、,]', raw_mc) if c]
-    round_trip = d.get('round_trip', False)
-    once_constraint = d.get('once_constraint', False)
+    
     start_word = to_katakana(d.get('start_word', ""))
     start_char = to_katakana(d.get('start_char', ""))
     end_char = to_katakana(d.get('end_char', ""))
@@ -106,8 +109,11 @@ def search():
             if w in red_words: continue
             if asc_list and get_clean_char(w, "head") not in asc_list: continue
             if aec_list and get_clean_char(w, "tail") not in aec_list: continue
+            
+            # 復元: 大文字=小文字設定がプールのフィルタリングに影響
             check_w = "".join([SMALL_TO_LARGE.get(c, c) for c in w]) if unify_small else w
             if any(ex in check_w for ex in ex_list): continue
+            
             head_char = get_clean_char(w, "head")
             if any(head_char == bs for bs in bs_list): continue
             temp_pool.append(w)
@@ -121,39 +127,53 @@ def search():
     start_time = time.time()
 
     def solve(path, current_total_len):
-        # 判定: タイムアウトは常にチェック。件数制限はフラグが有効な場合のみチェック
-        if time.time() - start_time > search_timeout:
-            return
-        if limit_enabled and len(results) >= result_limit:
-            return
+        if time.time() - start_time > search_timeout: return
+        if limit_enabled and len(results) >= result_limit: return
         
-        current_word = path[-1]
-
-        if patterns:
-            current_idx = len(path)
-            pos_match = False
-            has_pos_constraint = False
-            for p in patterns:
-                m = re.match(r"^(\d+)(.+)$", p)
-                if m:
-                    p_num, p_body = m.groups()
-                    if int(p_num) == current_idx:
-                        has_pos_constraint = True
-                        regex = "^" + re.escape(p_body).replace(r"\*", ".*") + "$"
-                        if re.match(regex, current_word): pos_match = True
-            if has_pos_constraint and not pos_match: return
-
         if len(path) == max_len:
+            # 復元: 青（必須単語）チェック
             path_set = set(path)
             if not blue_words.issubset(path_set): return
+
+            # 復元: グループ必須チェック
             for group in group_constraints:
                 if not any(target in path_set for target in group if target): return
-            if must_chars:
-                full_current = "".join(path)
-                if once_constraint:
-                    if not all(full_current.count(mc) == 1 for mc in must_chars): return
+            
+            # 復元: 選択必須（ちょうど判定込）
+            full_current_text = "".join(path)
+            if unify_small:
+                full_current_text = "".join([SMALL_TO_LARGE.get(c, c) for c in full_current_text])
+
+            for choice_group in choice_constraints:
+                target_count = 1
+                group_shift = 0
+                items_to_check = []
+                for item in choice_group:
+                    if ':' in item:
+                        parts = item.split(':')
+                        if parts[0].upper() == 'S': group_shift = int(parts[1])
+                        elif parts[0].isdigit(): target_count = int(parts[0])
+                        elif parts[1].isdigit(): target_count = int(parts[1])
+                    else: items_to_check.append(item)
+
+                total_found = 0
+                for target in items_to_check:
+                    # 50音ずらし対応
+                    shifted_target = "".join([shift_kana(c, group_shift) for c in target])
+                    total_found += full_current_text.count(shifted_target)
+
+                if exclusive_choice: # 「ちょうど」制限
+                    if total_found != target_count: return
                 else:
-                    if not all(mc in full_current for mc in must_chars): return
+                    if total_found < target_count: return
+
+            # 復元: 単一制約 (once_constraint)
+            if must_chars:
+                if once_constraint:
+                    if not all(full_current_text.count(mc) == 1 for mc in must_chars): return
+                else:
+                    if not all(mc in full_current_text for mc in must_chars): return
+            
             if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
             
             last_tail = get_clean_char(path[-1], "tail")
@@ -163,6 +183,7 @@ def search():
             results.append(list(path))
             return
         
+        # 復元: 牛耕 (round_trip) ロジック
         is_odd_conn = (len(path) % 2 != 0)
         max_offset = len(path[-1].replace("ー", ""))
         
@@ -171,9 +192,11 @@ def search():
             base_offsets += [i for i in range(pos_shift + 1, max_offset)]
 
         for offset in base_offsets:
+            # src_charの抽出（牛耕時は先頭を見る）
             src_char = get_clean_char(path[-1], "tail" if not round_trip or is_odd_conn else "head", offset)
             if not src_char: continue
             
+            # 50音ずらし (use_shift)
             if use_shift and ks_val != 0:
                 if shift_mode == 'abs':
                     base_targets = {shift_kana(src_char, abs(ks_val)), shift_kana(src_char, -abs(ks_val))}
@@ -194,8 +217,7 @@ def search():
                         found_at_this_offset = True
                         solve(path + [nxt], current_total_len + len(nxt))
             
-            if found_at_this_offset:
-                break
+            if found_at_this_offset: break
 
     starts = [start_word] if (start_word in word_pool) else word_pool
     for w in sorted(starts):

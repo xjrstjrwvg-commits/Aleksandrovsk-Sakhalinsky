@@ -76,9 +76,11 @@ def search():
     red_words = set(d.get('red_words', []))
     blue_words = set(d.get('blue_words', []))
     
-    # 新規追加: 全単語縛りパラメータ
-    all_start_char = to_katakana(d.get('all_start_char', ""))
-    all_end_char = to_katakana(d.get('all_end_char', ""))
+    # 複数指定対応: リストとして取得
+    raw_asc = to_katakana(d.get('all_start_char', ""))
+    asc_list = [c.strip() for c in re.split('[、,]', raw_asc) if c.strip()]
+    raw_aec = to_katakana(d.get('all_end_char', ""))
+    aec_list = [c.strip() for c in re.split('[、,]', raw_aec) if c.strip()]
 
     exclude_chars = to_katakana(d.get('exclude_chars', ""))
     ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
@@ -99,9 +101,9 @@ def search():
         for w in DICTIONARY_MASTER.get(cat, []):
             if w in red_words: continue
             
-            # 全単語縛りのチェック（プール作成時にも適用）
-            if all_start_char and get_clean_char(w, "head") != all_start_char: continue
-            if all_end_char and get_clean_char(w, "tail") != all_end_char: continue
+            # 全単語縛り(複数対応): リストのどれかに一致すればOK
+            if asc_list and get_clean_char(w, "head") not in asc_list: continue
+            if aec_list and get_clean_char(w, "tail") not in aec_list: continue
 
             check_w = "".join([SMALL_TO_LARGE.get(c, c) for c in w]) if unify_small else w
             if any(ex in check_w for ex in ex_list): continue
@@ -149,7 +151,6 @@ def search():
                     if not all(mc in full_current for mc in must_chars): return
             if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
             
-            # 最終単語の末尾チェック（個別指定がある場合）
             last_tail = get_clean_char(path[-1], "tail")
             allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
             if end_char and last_tail not in allowed_ends: return
@@ -160,7 +161,6 @@ def search():
         is_odd_conn = (len(path) % 2 != 0)
         max_offset = len(path[-1].replace("ー", ""))
         
-        # 遡り接続ルール：見つからない時だけ遡る
         base_offsets = [pos_shift]
         if auto_recovery:
             base_offsets += [i for i in range(pos_shift + 1, max_offset)]
@@ -194,7 +194,6 @@ def search():
 
     starts = [start_word] if (start_word in word_pool) else word_pool
     for w in sorted(starts):
-        # 個別開始字チェック（指定がある場合）
         if not start_word and start_char and get_clean_char(w, "head") != start_char: continue
         solve([w], len(w))
     return jsonify({"routes": results, "count": len(results)})

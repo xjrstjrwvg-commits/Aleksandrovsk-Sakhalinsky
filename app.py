@@ -1,168 +1,229 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>極・ULTRA ENGINE Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        html, body { overflow-x: hidden; position: relative; width: 100%; touch-action: pan-y; }
-        .dark { color-scheme: dark; }
-        .glass { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl; }
-        input, select, textarea { @apply bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-sm outline-none focus:ring-1 ring-blue-500 font-bold; }
-        .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
-        ::-webkit-scrollbar { display: none; }
-        .btn-white { background-color: white; color: #334155; border-color: #e2e8f0; }
-        .dark .btn-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
-    </style>
-</head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
-    <div class="max-w-md mx-auto space-y-3">
-        <header class="flex justify-between items-center py-1">
-            <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
-            <div class="flex gap-2">
-                <button onclick="resetSettings()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 px-4 py-2 rounded-full text-[10px] font-bold uppercase">Reset</button>
-                <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase">All Copy</button>
-            </div>
-        </header>
+import os, time, sys, re
+from flask import Flask, render_template, request, jsonify
+from collections import Counter, defaultdict
 
-        <div class="glass rounded-[28px] p-5 space-y-4">
-            <input id="sw" placeholder="開始単語" class="w-full">
-            <div class="grid grid-cols-2 gap-2">
-                <div class="space-y-1"><label class="text-[9px] font-bold text-blue-500 uppercase">全語開始字</label><input id="asc" placeholder="ア,カ" class="w-full"></div>
-                <div class="space-y-1"><label class="text-[9px] font-bold text-blue-500 uppercase">全語終了字</label><input id="aec" placeholder="ン,イ" class="w-full"></div>
-            </div>
+sys.setrecursionlimit(10000)
+app = Flask(__name__)
 
-            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku"> 濁点OK</label>
-                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku"> 半濁点OK</label>
-                <label class="flex items-center gap-1 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery"> 遡り接続</label>
-                <label class="flex items-center gap-1 cursor-pointer text-orange-600"><input type="checkbox" id="unify_small"> 大文字=小文字</label>
-                <label class="flex items-center gap-1 cursor-pointer text-blue-600"><input type="checkbox" id="rt"> 牛耕</label>
-                <label class="flex items-center gap-1 cursor-pointer text-blue-600"><input type="checkbox" id="conj"> 共役排除</label>
-                <label class="flex items-center gap-1 cursor-pointer text-blue-600"><input type="checkbox" id="use_shift"> 50音ずらし</label>
-            </div>
+# --- 定数・マッピング ---
+KANA_LIST = (
+    "アイウエオ" "カキクケコ" "ガギグゲゴ" "サシスセソ" "ザジズゼゾ"
+    "タチツテト" "ダヂヅデド" "ナニヌネノ" "ハヒフヘホ" "バビブベボ"
+    "パピプペポ" "マミムメモ" "ヤユヨ" "ラリルレロ" "ワン"
+)
+SMALL_TO_LARGE = {"ァ": "ア", "ィ": "イ", "ゥ": "ウ", "ェ": "エ", "ォ": "オ", "ッ": "ツ", "ャ": "ヤ", "ュ": "ユ", "ョ": "ヨ", "ヮ": "ワ"}
+DAKU_MAP = {"カ":"ガ", "キ":"ギ", "ク":"グ", "ケ":"ゲ", "コ":"ゴ", "サ":"ザ", "シ":"ジ", "ス":"ズ", "セ":"ゼ", "ソ":"ゾ", "タ":"ダ", "チ":"ヂ", "ツ":"ヅ", "テ":"デ", "ト":"ド", "ハ":"バ", "ヒ":"ビ", "フ":"ブ", "ヘ":"ベ", "ホ":"ボ"}
+HANDAKU_MAP = {"ハ":"パ", "ヒ":"ピ", "フ":"プ", "ヘ":"ペ", "ホ":"ポ"}
 
-            <!-- 辞書パネル -->
-            <div class="border-t border-slate-100 dark:border-slate-800 pt-3">
-                <button type="button" onclick="document.getElementById('dict-manager').classList.toggle('hidden')" class="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black uppercase text-slate-500">Dictionary Table</button>
-                <div id="dict-manager" class="hidden mt-2 max-h-48 overflow-y-auto grid grid-cols-2 gap-1" id="dict-list"></div>
-            </div>
+# --- 辞書データ ---
+DICTIONARY_MASTER = {
+    "country": ["アイスランド", "アイルランド", "アゼルバイジャン", "アフガニスタン", "アメリカ", "アラブシュチョウコクレンポウ", "アルジェリア", "アルゼンチン", "アルバニア", "アルメニア", "アンゴラ", "アンティグアバーブーダ", "アンドラ", "イエメン", "イギリス", "イスラエル", "イタリア", "イラク", "イラン", "インド", "インドネシア", "ウガンダ", "ウクライナ", "ウズベキスタン", "ウルグアイ", "エクアドル", "エジプト", "エストニア", "エスワティニ", "エチオピア", "エリトリア", "エルサルバドル", "オーストラリア", "オーストリア", "オマーン", "オランダ", "ガーナ", "カーボベルデ", "ガイアナ", "カザフスタン", "カタール", "カナダ", "ガボン", "カメルーン", "ガンビア", "カンボジア", "キタマケドニア", "ギニア", "ギニアビサウ", "キプロス", "キューバ", "ギリシャ", "キリバス", "キルギス", "グアテマラ", "クウェート", "クックショトウ", "グレナダ", "クロアチア", "ケニア", "コートジボワール", "コスタリカ", "コソボ", "コモロ", "コロンビア", "コンゴキョウワコク", "コンゴミンシュキョウワコク", "サウジアラビア", "サモア", "サントメプリンシペ", "ザンビア", "サンマリノ", "シエラレオネ", "ジブチ", "ジャマイカ", "ジョージア", "シリア", "シンガポール", "ジンバブエ", "スイス", "スウェーデン", "スーダン", "スペイン", "スリナム", "スリランカ", "スロバキア", "スロベニア", "セーシェル", "セキドウギニア", "セネガル", "セルビア", "セントクリストファーネービス", "セントビンセントグレナディーンショトウ", "セントルシア", "ソマリア", "ソロモンショトウ", "タイ", "ダイカンミンコク", "タジキスタン", "タンザニア", "チェコ", "チャド", "チュウオウアフリカ", "チュウカジンミンキョウワコク", "チュニジア", "チョウセンミンシュシュギジンミンキョウワコク", "チリ", "ツバル", "デンマーク", "ドイツ", "トーゴ", "ドミニカキョウワコク", "ドミニカコク", "トリニダードトバゴ", "トルクメニスタン", "トルコ", "トンガ", "ナイジェリア", "ナウル", "ナミビア", "ニウエ", "ニカラグア", "ニジェール", "ニホン", "ニュージーランド", "ネパール", "ノルウェー", "バーレーン", "ハイチ", "パキスタン", "バチカンシコク", "パナマ", "バヌアツ", "バハマ", "パプアニューギニア", "パラオ", "パラグアイ", "バルバドス", "ハンガリー", "バングラデシュ", "ヒガシティモール", "フィジー", "フィリピン", "フィンランド", "ブータン", "ブラジル", "フランス", "ブルガリア", "ブルキナファソ", "ブルネイ", "ブルンジ", "ベトナム", "ベナン", "ベネズエラ", "ベラルーシ", "ベリーズ", "ペルー", "ベルギー", "ポーランド", "ボスニアヘルツェゴビナ", "ボツワナ", "ボリビア", "ポルトガル", "ホンジュラス", "マーシャルショトウ", "マダガスカル", "マラウイ", "マリ", "マルタ", "マレーシア", "ミクロネシアレンポウ", "ミナミアフリカキョウワコク", "ミナミスーダン", "ミャンマー", "メキシコ", "モーリシャス", "モーリタニア", "モザンビーク", "モナコ", "モルディブ", "モルドバ", "モロッコ", "モンゴル", "モンテネグロ", "ヨルダン", "ラオス", "ラトビア", "リトアニア", "リビア", "リヒテンシュタイン", "リベリア", "ルーマニア", "ルクセンブルク", "ルワンダ", "レソト", "レバノン", "ロシア"],
+    "capital": ["アクラ", "アシガバット", "アスタナ", "アスマラ", "アスンシオン", "アディスアベバ", "アテネ", "アバルア", "アピア", "アブジャ", "アブダビ", "アムステルダム", "アルジェ", "アロフィ", "アンカラ", "アンタナナリボ", "アンドララベリャ", "アンマン", "イスラマバード", "ウィーン", "ウィントフック", "ウェリントン", "ウランバートル", "エルサレム", "エレバン", "オスロ", "オタワ", "カイロ", "カストリーズ", "カトマンズ", "カブール", "カラカス", "カンパラ", "キーウ", "キガリ", "キシナウ", "ギテガ", "キト", "キャンベラ", "キングスタウン", "キングストン", "キンシャサ", "グアテマラシティ", "クアラリンプール", "クウェート", "コナクリ", "コペンハーゲン", "ザグレブ", "サヌア", "サラエボ", "サンサルバドル", "サンティアゴ", "サントドミンゴ", "サントメ", "サンホセ", "サンマリノ", "ジブチ", "ジャカルタ", "ジュバ", "ジョージタウン", "シンガポール", "スコピエ", "ストックホルム", "スバ", "スリジャヤワルダナプラコッテ", "セントジョージズ", "セントジョンズ", "ソウル", "ソフィア", "ダカール", "タシケント", "ダッカ", "ダブリン", "ダマスカス", "タラワ", "タリン", "チュニス", "ティラナ", "ディリ", "ティンプー", "テグシガルパ", "テヘラン", "デリー", "トウキョウ", "ドゥシャンベ", "ドーハ", "ドドマ", "トビリシ", "トリポリ", "ナイロビ", "ナッソー", "ニアメ", "ニコシア", "ヌアクショット", "ヌクアロファ", "ネピドー", "バクー", "バグダッド", "バセテール", "パナマシティ", "バチカン", "ハノイ", "ハバナ", "ハボローネ", "バマコ", "パラマリボ", "ハラレ", "パリ", "パリキール", "ハルツーム", "バレッタ", "バンギ", "バンコク", "バンジュール", "バンダルスリブガワン", "ビエンチャン", "ビクトリア", "ビサウ", "ビシュケク", "ピョンヤン", "ビリニュス", "ファドゥーツ", "ブエノスアイレス", "ブカレスト", "ブダペスト", "フナフティ", "プノンペン", "プライア", "ブラザビル", "ブラジリア", "ブラチスラバ", "プラハ", "フリータウン", "プリシュティナ", "ブリッジタウン", "ブリュッセル", "プレトリア", "ベイルート", "ベオグラード", "ペキン", "ヘルシンキ", "ベルモパン", "ベルリン", "ベルン", "ポートオブスペイン", "ポートビラ", "ポートモレスビー", "ポートルイス", "ボゴタ", "ポドゴリツァ", "ホニアラ", "ポルトープランス", "ポルトノボ", "マジュロ", "マスカット", "マセル", "マドリード", "マナーマ", "マナーマ", "マナグア", "マニラ", "マプト", "マラボ", "マルキョク", "マレ", "ミンスク", "ムババーネ", "メキシコシティ", "モガディシュ", "モスクワ", "モナコ", "モロニ", "モンテビデオ", "モンロビア", "ヤウンデ", "ヤムスクロ", "ヤレン", "ラパス", "ラバト", "リーブルビル", "リガ", "リスボン", "リマ", "リヤド", "リュブリャナ", "リロングウェ", "ルアンダ", "ルクセンブルク", "ルサカ", "レイキャビク", "ローマ", "ロゾー", "ロメ", "ロンドン", "ワガドゥグー", "ワシントンディーシー", "ワルシャワ", "ンジャメナ"]
+}
 
-            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div class="space-y-1"><label class="text-[9px] font-bold text-rose-500 uppercase">Timeout</label><input type="number" id="timeout" value="15" class="w-full"></div>
-                <div class="space-y-1"><label class="text-[9px] font-bold text-emerald-500 uppercase">Max表示</label><input type="number" id="limit" value="1500" class="w-full"></div>
-            </div>
+# --- ユーティリティ ---
+def to_katakana(text):
+    if not text: return ""
+    return "".join([chr(ord(c) + 96) if 0x3041 <= ord(c) <= 0x3096 else c for c in text])
 
-            <div class="flex items-center justify-between pt-2">
-                <div class="flex gap-3 text-[11px] font-bold">
-                    <label><input type="checkbox" name="cat" value="country" checked> 国</label>
-                    <label><input type="checkbox" name="cat" value="capital"> 首都</label>
-                </div>
-                <button onclick="run()" id="btn" class="bg-blue-600 text-white font-black px-8 py-3 rounded-2xl">Explore</button>
-            </div>
-        </div>
-        <div id="res" class="space-y-3 pb-20"></div>
-    </div>
+def get_clean_char(w, pos="head", offset=0):
+    text = w.replace("ー", "")
+    if not text: return ""
+    try:
+        idx = offset if pos == "head" else -(1 + offset)
+        char = text[idx]
+        return SMALL_TO_LARGE.get(char, char)
+    except IndexError: return ""
 
-    <script>
-        let currentRoutes = [];
-        let wordStates = {};
+def shift_kana(char, n):
+    if char not in KANA_LIST: return char
+    return KANA_LIST[(KANA_LIST.index(char) + n) % len(KANA_LIST)]
 
-        function saveSettings() {
-            const settings = {
-                sw: document.getElementById('sw').value,
-                asc: document.getElementById('asc').value,
-                aec: document.getElementById('aec').value,
-                timeout: document.getElementById('timeout').value,
-                limit: document.getElementById('limit').value,
-                rt: document.getElementById('rt').checked,
-                conj: document.getElementById('conj').checked,
-                use_shift: document.getElementById('use_shift').checked,
-                allow_daku: document.getElementById('allow_daku').checked,
-                allow_handaku: document.getElementById('allow_handaku').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked,
-                unify_small: document.getElementById('unify_small').checked,
-                wordStates: wordStates
-            };
-            localStorage.setItem('ultraSettings', JSON.stringify(settings));
-        }
+def get_variants(char, allow_daku, allow_handaku):
+    variants = {char}
+    if allow_daku:
+        for k, v in DAKU_MAP.items():
+            if char == k: variants.add(v)
+            if char == v: variants.add(k)
+    if allow_handaku:
+        for k, v in HANDAKU_MAP.items():
+            if char == k: variants.add(v)
+            if char == v: variants.add(k)
+    return variants
 
-        function loadSettings() {
-            const s = JSON.parse(localStorage.getItem('ultraSettings') || '{}');
-            if (s.sw) {
-                document.getElementById('sw').value = s.sw;
-                document.getElementById('asc').value = s.asc;
-                document.getElementById('aec').value = s.aec;
-                document.getElementById('timeout').value = s.timeout;
-                document.getElementById('limit').value = s.limit;
-                document.getElementById('rt').checked = s.rt;
-                document.getElementById('conj').checked = s.conj;
-                document.getElementById('use_shift').checked = s.use_shift;
-                document.getElementById('allow_daku').checked = s.allow_daku;
-                document.getElementById('allow_handaku').checked = s.allow_handaku;
-                document.getElementById('auto_recovery').checked = s.auto_recovery;
-                document.getElementById('unify_small').checked = s.unify_small;
-                wordStates = s.wordStates || {};
-            }
-        }
+@app.route('/')
+def index(): return render_template('index.html')
 
-        async function loadDictionaryUI() {
-            const r = await fetch('/get_dictionary');
-            const dict = await r.json();
-            const allWords = [...dict.country, ...dict.capital].sort();
-            const list = document.getElementById('dict-manager');
-            list.innerHTML = allWords.map(w => {
-                const state = wordStates[w] || 'white';
-                const style = state === 'red' ? "background: #f43f5e; color: white" : (state === 'blue' ? "background: #2563eb; color: white" : "");
-                return `<button onclick="toggleWord(this, '${w}')" class="text-[9px] p-1 border rounded" style="${style}">${w}</button>`;
-            }).join('');
-        }
+@app.route('/get_dictionary')
+def get_dictionary(): return jsonify(DICTIONARY_MASTER)
 
-        function toggleWord(btn, word) {
-            const cycle = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
-            wordStates[word] = cycle[wordStates[word] || 'white'];
-            loadDictionaryUI();
-            saveSettings();
-        }
+@app.route('/search', methods=['POST'])
+def search():
+    d = request.json
+    search_timeout = int(d.get('timeout', 15))
+    result_limit = int(d.get('limit', 1500))
+    limit_enabled = d.get('limit_enabled', True)
 
-        function resetSettings() { localStorage.removeItem('ultraSettings'); location.reload(); }
+    max_len = int(d.get('max_len', 5))
+    pos_shift = int(d.get('pos_shift', 0))
+    use_shift = d.get('use_shift', False)
+    ks_val = int(d.get('ks_abs', 1))
+    shift_mode = d.get('shift_mode', 'abs')
+    allow_daku = d.get('allow_daku', False)
+    allow_handaku = d.get('allow_handaku', False)
+    unify_small = d.get('unify_small', False)
+    
+    # 復元: 制約リスト
+    choice_constraints = d.get('choice_constraints', [])
+    group_constraints = d.get('group_constraints', [])
+    exclusive_choice = d.get('exclusive_choice', False)
+    auto_recovery = d.get('auto_recovery', False)
+    round_trip = d.get('round_trip', False) # 牛耕
+    once_constraint = d.get('once_constraint', False) # 単一制約
+    char_limit_mode = d.get('char_limit_mode', False)
 
-        async function run() {
-            const btn = document.getElementById('btn'); btn.innerText = "...";
-            const r = await fetch('/search', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    start_word: document.getElementById('sw').value,
-                    all_start_char: document.getElementById('asc').value,
-                    all_end_char: document.getElementById('aec').value,
-                    timeout: document.getElementById('timeout').value,
-                    limit: document.getElementById('limit').value,
-                    rt: document.getElementById('rt').checked,
-                    conj: document.getElementById('conj').checked,
-                    use_shift: document.getElementById('use_shift').checked,
-                    allow_daku: document.getElementById('allow_daku').checked,
-                    allow_handaku: document.getElementById('allow_handaku').checked,
-                    auto_recovery: document.getElementById('auto_recovery').checked,
-                    unify_small: document.getElementById('unify_small').checked,
-                    red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'),
-                    blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue'),
-                    categories: ["country"]
-                })
-            });
-            const d = await r.json();
-            currentRoutes = d.routes;
-            display();
-            btn.innerText = "Explore";
-        }
+    red_words = set(d.get('red_words', []))
+    blue_words = set(d.get('blue_words', []))
+    
+    raw_asc = to_katakana(d.get('all_start_char', ""))
+    asc_list = [c.strip() for c in re.split('[、,]', raw_asc) if c.strip()]
+    raw_aec = to_katakana(d.get('all_end_char', ""))
+    aec_list = [c.strip() for c in re.split('[、,]', raw_aec) if c.strip()]
 
-        function display() {
-            document.getElementById('res').innerHTML = currentRoutes.map(rt => `
-                <div class="glass p-3 rounded-xl text-sm font-bold">${rt.join(' → ')}</div>
-            `).join('');
-        }
+    exclude_chars = to_katakana(d.get('exclude_chars', ""))
+    ex_list = [c.strip() for c in re.split('[、,]', exclude_chars) if c.strip()]
+    ban_start_chars = to_katakana(d.get('ban_start_chars', ""))
+    bs_list = [c.strip() for c in re.split('[、,]', ban_start_chars) if c.strip()]
+    
+    raw_mc = to_katakana(d.get('must_char', ""))
+    must_chars = [c for c in re.split('[、,]', raw_mc) if c]
+    
+    start_word = to_katakana(d.get('start_word', ""))
+    start_char = to_katakana(d.get('start_char', ""))
+    end_char = to_katakana(d.get('end_char', ""))
+    
+    selected_cats = d.get('categories', ["country"])
+    temp_pool = []
+    for cat in selected_cats:
+        for w in DICTIONARY_MASTER.get(cat, []):
+            if w in red_words: continue
+            if asc_list and get_clean_char(w, "head") not in asc_list: continue
+            if aec_list and get_clean_char(w, "tail") not in aec_list: continue
+            
+            # 復元: 大文字=小文字設定がプールのフィルタリングに影響
+            check_w = "".join([SMALL_TO_LARGE.get(c, c) for c in w]) if unify_small else w
+            if any(ex in check_w for ex in ex_list): continue
+            
+            head_char = get_clean_char(w, "head")
+            if any(head_char == bs for bs in bs_list): continue
+            temp_pool.append(w)
+    
+    word_pool = list(set(temp_pool))
+    head_index = defaultdict(list)
+    for w in word_pool:
+        head_index[get_clean_char(w, "head")].append(w)
 
-        window.onload = () => { loadSettings(); loadDictionaryUI(); };
-    </script>
-</body>
-</html>
+    results = []
+    start_time = time.time()
+
+    def solve(path, current_total_len):
+        if time.time() - start_time > search_timeout: return
+        if limit_enabled and len(results) >= result_limit: return
+        
+        if len(path) == max_len:
+            # 復元: 青（必須単語）チェック
+            path_set = set(path)
+            if not blue_words.issubset(path_set): return
+
+            # 復元: グループ必須チェック
+            for group in group_constraints:
+                if not any(target in path_set for target in group if target): return
+            
+            # 復元: 選択必須（ちょうど判定込）
+            full_current_text = "".join(path)
+            if unify_small:
+                full_current_text = "".join([SMALL_TO_LARGE.get(c, c) for c in full_current_text])
+
+            for choice_group in choice_constraints:
+                target_count = 1
+                group_shift = 0
+                items_to_check = []
+                for item in choice_group:
+                    if ':' in item:
+                        parts = item.split(':')
+                        if parts[0].upper() == 'S': group_shift = int(parts[1])
+                        elif parts[0].isdigit(): target_count = int(parts[0])
+                        elif parts[1].isdigit(): target_count = int(parts[1])
+                    else: items_to_check.append(item)
+
+                total_found = 0
+                for target in items_to_check:
+                    # 50音ずらし対応
+                    shifted_target = "".join([shift_kana(c, group_shift) for c in target])
+                    total_found += full_current_text.count(shifted_target)
+
+                if exclusive_choice: # 「ちょうど」制限
+                    if total_found != target_count: return
+                else:
+                    if total_found < target_count: return
+
+            # 復元: 単一制約 (once_constraint)
+            if must_chars:
+                if once_constraint:
+                    if not all(full_current_text.count(mc) == 1 for mc in must_chars): return
+                else:
+                    if not all(mc in full_current_text for mc in must_chars): return
+            
+            if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
+            
+            last_tail = get_clean_char(path[-1], "tail")
+            allowed_ends = get_variants(end_char, allow_daku, allow_handaku) if end_char else set()
+            if end_char and last_tail not in allowed_ends: return
+            
+            results.append(list(path))
+            return
+        
+        # 復元: 牛耕 (round_trip) ロジック
+        is_odd_conn = (len(path) % 2 != 0)
+        max_offset = len(path[-1].replace("ー", ""))
+        
+        base_offsets = [pos_shift]
+        if auto_recovery:
+            base_offsets += [i for i in range(pos_shift + 1, max_offset)]
+
+        for offset in base_offsets:
+            # src_charの抽出（牛耕時は先頭を見る）
+            src_char = get_clean_char(path[-1], "tail" if not round_trip or is_odd_conn else "head", offset)
+            if not src_char: continue
+            
+            # 50音ずらし (use_shift)
+            if use_shift and ks_val != 0:
+                if shift_mode == 'abs':
+                    base_targets = {shift_kana(src_char, abs(ks_val)), shift_kana(src_char, -abs(ks_val))}
+                else:
+                    base_targets = {shift_kana(src_char, ks_val)}
+            else:
+                base_targets = {src_char}
+            
+            all_targets = set()
+            for bt in base_targets: all_targets.update(get_variants(bt, allow_daku, allow_handaku))
+            
+            found_at_this_offset = False
+            for tc in all_targets:
+                for nxt in head_index.get(tc, []):
+                    if nxt not in path:
+                        if char_limit_mode:
+                            if not set("".join(path)).isdisjoint(set(nxt)): continue
+                        found_at_this_offset = True
+                        solve(path + [nxt], current_total_len + len(nxt))
+            
+            if found_at_this_offset: break
+
+    starts = [start_word] if (start_word in word_pool) else word_pool
+    for w in sorted(starts):
+        if not start_word and start_char and get_clean_char(w, "head") != start_char: continue
+        solve([w], len(w))
+    return jsonify({"routes": results, "count": len(results)})
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

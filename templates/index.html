@@ -13,12 +13,21 @@
         .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
         ::-webkit-scrollbar { display: none; }
         .success-btn { @apply bg-emerald-500 text-white !important; }
+        
+        /* 辞書ボタン用スタイル */
+        .word-white { @apply bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700; }
+        .word-red { @apply bg-rose-500 text-white border-rose-600; }
+        .word-blue { @apply bg-blue-600 text-white border-blue-700; }
+        .custom-scroll { max-height: 300px; overflow-y: auto; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
     <div class="max-w-md mx-auto space-y-3">
         <header class="flex justify-between items-center py-1">
-            <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
+                <button onclick="toggleDarkMode()" class="text-xl p-1 hover:scale-110 transition-transform" title="Toggle Dark Mode">🌗</button>
+            </div>
             <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase transition-colors">All Copy</button>
         </header>
 
@@ -33,13 +42,18 @@
 
             <div class="grid grid-cols-2 gap-2">
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">使用不可文字</label>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">使用不可文字 (全体)</label>
                     <input id="exc" placeholder="ン,ガ" class="w-full">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">ルートパターン</label>
-                    <input id="pattern" placeholder="1*, 2ア*, *ン" class="w-full">
+                    <label class="text-[9px] font-bold text-rose-400 uppercase ml-1">禁止開始文字</label>
+                    <input id="bsc" placeholder="ガ,ザ" class="w-full">
                 </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[9px] font-bold text-slate-400 uppercase ml-1">ルートパターン</label>
+                <input id="pattern" placeholder="1*, 2ア*, *ン" class="w-full">
             </div>
 
             <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -56,6 +70,7 @@
                 </div>
             </div>
 
+            <!-- 50音ずらし -->
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="flex justify-between items-center">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
@@ -74,7 +89,22 @@
                 </div>
             </div>
 
-            <!-- 特殊ルール設定 -->
+            <!-- 辞書管理パネル (追加) -->
+            <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+                <button type="button" onclick="document.getElementById('dict-manager').classList.toggle('hidden')" class="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 flex justify-between px-4 items-center">
+                    Dictionary Table <span id="dict-status">OFF</span>
+                </button>
+                <div id="dict-manager" class="hidden space-y-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div class="flex gap-2">
+                        <button type="button" onclick="bulkSet('white')" class="flex-1 py-2 bg-white dark:bg-slate-700 rounded-lg text-[9px] font-bold shadow-sm">全開放(白)</button>
+                        <button type="button" onclick="bulkSet('red')" class="flex-1 py-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-lg text-[9px] font-bold shadow-sm">全禁止(赤)</button>
+                    </div>
+                    <div id="dict-list" class="grid grid-cols-2 gap-1 custom-scroll p-1">
+                        <!-- JSで生成 -->
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-3 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku" class="accent-blue-600"> 濁点変換OK</label>
@@ -116,8 +146,8 @@
 
             <div class="flex items-center justify-between pt-2">
                 <div class="flex gap-3 text-[11px] font-bold">
-                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="country" checked> 国</label>
-                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="capital"> 首都</label>
+                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="country" checked onchange="loadDictionaryUI()"> 国</label>
+                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="capital" onchange="loadDictionaryUI()"> 首都</label>
                 </div>
                 <button type="button" onclick="run()" id="btn" class="bg-blue-600 text-white font-black px-8 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">Explore</button>
             </div>
@@ -141,22 +171,80 @@
 
     <script>
         let currentRoutes = [];
+        let wordStates = {}; // { word: 'white' | 'red' | 'blue' }
 
         function to_katakana(text) {
             return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60));
         }
 
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            saveSettings();
+        }
+
         async function init() {
             if (localStorage.ultraSettings) {
                 const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','mc','ec','exc','pattern','gc','cc','ml','ps','ks_abs','ttl','copy_limit'];
+                const fields = ['sw','sc','mc','ec','exc','bsc','pattern','gc','cc','ml','ps','ks_abs','ttl','copy_limit'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
                 
-                const checks = ['conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery','char_limit_mode'];
+                const checks = ['conj','rt','once','copy_with_len','allow_daku','allow_handaku','unify_small','exclusive_choice','auto_recovery','char_limit_mode','use_shift'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
+                
+                if (s.shift_mode) {
+                    const rb = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`);
+                    if (rb) rb.checked = true;
+                }
+                if (s.dark_mode) document.documentElement.classList.add('dark');
+                if (s.wordStates) wordStates = s.wordStates;
                 
                 document.querySelectorAll('input[name="cat"]').forEach(c => c.checked = (s.cats || ["country"]).includes(c.value));
             }
+            await loadDictionaryUI();
+        }
+
+        async function loadDictionaryUI() {
+            const r = await fetch('/get_dictionary');
+            const dict = await r.json();
+            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
+            let allWords = [];
+            cats.forEach(c => allWords = allWords.concat(dict[c] || []));
+            allWords = Array.from(new Set(allWords)).sort();
+
+            const list = document.getElementById('dict-list');
+            list.innerHTML = allWords.map(w => {
+                const state = wordStates[w] || 'white';
+                return `<button type="button" onclick="toggleWordState(this, '${w}')" class="word-btn text-[10px] font-bold p-2 rounded-lg border transition-all word-${state}">${w}</button>`;
+            }).join('');
+            updateDictStatus();
+        }
+
+        function toggleWordState(btn, word) {
+            const cycle = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
+            const currentState = wordStates[word] || 'white';
+            const newState = cycle[currentState];
+            wordStates[word] = newState;
+            
+            btn.className = `word-btn text-[10px] font-bold p-2 rounded-lg border transition-all word-${newState}`;
+            updateDictStatus();
+            saveSettings();
+        }
+
+        function bulkSet(state) {
+            const btns = document.querySelectorAll('.word-btn');
+            btns.forEach(btn => {
+                const word = btn.innerText;
+                wordStates[word] = state;
+                btn.className = `word-btn text-[10px] font-bold p-2 rounded-lg border transition-all word-${state}`;
+            });
+            updateDictStatus();
+            saveSettings();
+        }
+
+        function updateDictStatus() {
+            const redCount = Object.values(wordStates).filter(v => v === 'red').length;
+            const blueCount = Object.values(wordStates).filter(v => v === 'blue').length;
+            document.getElementById('dict-status').innerText = (redCount || blueCount) ? `R:${redCount} B:${blueCount}` : "OFF";
         }
 
         function saveSettings() {
@@ -167,6 +255,7 @@
                 mc: document.getElementById('mc').value,
                 ec: document.getElementById('ec').value,
                 exc: document.getElementById('exc').value,
+                bsc: document.getElementById('bsc').value,
                 pattern: document.getElementById('pattern').value,
                 gc: document.getElementById('gc').value,
                 cc: document.getElementById('cc').value,
@@ -177,6 +266,8 @@
                 copy_limit: document.getElementById('copy_limit').value,
                 sort_order: document.getElementById('sort_order').value,
                 use_shift: document.getElementById('use_shift').checked,
+                shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
+                dark_mode: document.documentElement.classList.contains('dark'),
                 conj: document.getElementById('conj').checked,
                 rt: document.getElementById('rt').checked,
                 once: document.getElementById('once').checked,
@@ -187,6 +278,7 @@
                 exclusive_choice: document.getElementById('exclusive_choice').checked,
                 auto_recovery: document.getElementById('auto_recovery').checked,
                 char_limit_mode: document.getElementById('char_limit_mode').checked,
+                wordStates: wordStates,
                 cats: cats
             });
         }
@@ -196,7 +288,6 @@
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
-                // パターンのパース
                 const patterns = document.getElementById('pattern').value.split(',').map(p => {
                     const s = p.trim();
                     const m = s.match(/^(\d+)(.*)$/);
@@ -204,7 +295,6 @@
                     return to_katakana(s);
                 }).filter(p => p);
 
-                // 選択必須のパース
                 const cclines = document.getElementById('cc').value.split('\n').map(l => {
                     const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
                     if (items.length === 0) return null;
@@ -217,6 +307,10 @@
                     });
                 }).filter(g => g !== null);
 
+                // 赤・青の単語を抽出
+                const red_words = Object.keys(wordStates).filter(k => wordStates[k] === 'red');
+                const blue_words = Object.keys(wordStates).filter(k => wordStates[k] === 'blue');
+
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -225,6 +319,7 @@
                         must_char: document.getElementById('mc').value,
                         end_char: document.getElementById('ec').value,
                         exclude_chars: document.getElementById('exc').value, 
+                        ban_start_chars: document.getElementById('bsc').value,
                         patterns: patterns,
                         group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length > 0),
                         choice_constraints: cclines,
@@ -235,14 +330,16 @@
                         target_total_len: document.getElementById('ttl').value ? parseInt(document.getElementById('ttl').value) : null,
                         pos_shift: document.getElementById('ps').value,
                         use_shift: document.getElementById('use_shift').checked,
+                        shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
                         ks_abs: document.getElementById('ks_abs').value,
                         allow_daku: document.getElementById('allow_daku').checked,
                         allow_handaku: document.getElementById('allow_handaku').checked,
                         unify_small: document.getElementById('unify_small').checked,
-                        exclude_conjugates: document.getElementById('conj').checked,
                         round_trip: document.getElementById('rt').checked,
                         once_constraint: document.getElementById('once').checked,
-                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value)
+                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
+                        red_words: red_words,
+                        blue_words: blue_words
                     })
                 });
                 const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false;

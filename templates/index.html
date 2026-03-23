@@ -12,10 +12,9 @@
         input, select, textarea { @apply bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-sm outline-none focus:ring-1 ring-blue-500 font-bold; }
         .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
         ::-webkit-scrollbar { display: none; }
-        .success-btn { @apply bg-emerald-500 text-white !important; }
-        .custom-scroll { max-height: 300px; overflow-y: auto; scrollbar-width: none; }
         .btn-white { background-color: white; color: #334155; border-color: #e2e8f0; }
         .dark .btn-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
+        .custom-scroll { max-height: 300px; overflow-y: auto; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
@@ -33,14 +32,12 @@
 
         <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
             <input id="sw" placeholder="開始単語" class="w-full">
-            
             <div class="grid grid-cols-3 gap-2">
                 <input id="sc" placeholder="開始字" class="w-full">
                 <input id="mc" placeholder="必須文字" class="w-full">
                 <input id="ec" placeholder="終了字" class="w-full">
             </div>
 
-            <!-- 全語縛り -->
             <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-blue-500 uppercase ml-1">全語開始字</label>
@@ -52,20 +49,19 @@
                 </div>
             </div>
 
-            <!-- 制約テキストエリア -->
             <div class="grid grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1 tracking-widest">グループ必須</label>
-                    <textarea id="gc" placeholder="1行1組" class="w-full h-16 resize-none text-[10px]"></textarea>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1 tracking-widest">グループ必須 (:n可)</label>
+                    <textarea id="gc" placeholder="アメリカ,イギリス:2" class="w-full h-16 resize-none text-[10px]"></textarea>
                 </div>
                 <div class="space-y-1 text-orange-600">
-                    <label class="text-[9px] font-bold uppercase ml-1 tracking-widest">選択必須</label>
+                    <label class="text-[9px] font-bold uppercase ml-1 tracking-widest">選択必須 (:n可)</label>
                     <textarea id="cc" placeholder="ン,ン:2" class="w-full h-16 resize-none text-[10px]"></textarea>
                 </div>
             </div>
             <div class="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-xl border border-orange-100 dark:border-orange-900/30">
                 <input type="checkbox" id="exclusive_choice" class="w-4 h-4 cursor-pointer accent-orange-500">
-                <label for="exclusive_choice" class="text-[9px] font-bold text-orange-600 uppercase cursor-pointer">出現合計を「ちょうど」に限定</label>
+                <label for="exclusive_choice" class="text-[9px] font-bold text-orange-600 uppercase cursor-pointer tracking-tighter">合計出現数を「ちょうど」に限定</label>
             </div>
 
             <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -79,7 +75,6 @@
                 </div>
             </div>
 
-            <!-- 50音ずらし -->
             <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="flex justify-between items-center">
                     <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
@@ -98,7 +93,6 @@
                 </div>
             </div>
 
-            <!-- 辞書管理 -->
             <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
                 <button type="button" onclick="document.getElementById('dict-manager').classList.toggle('hidden')" class="w-full py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 flex justify-between px-4 items-center">
                     Dictionary Table <span id="dict-status" class="text-blue-500">OFF</span>
@@ -112,7 +106,6 @@
                 </div>
             </div>
 
-            <!-- 探索設定 -->
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
                 <div class="space-y-1">
                     <label class="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Timeout (秒)</label>
@@ -131,7 +124,27 @@
                 </div>
             </div>
 
-            <!-- オプション -->
+            <div class="grid grid-cols-2 gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ソート順</label>
+                    <select id="sort_mode" class="w-full text-[10px] font-bold">
+                        <option value="default">検索順</option>
+                        <option value="kana">50音順</option>
+                        <option value="len_asc">文字数少ない順</option>
+                        <option value="len_desc">文字数多い順</option>
+                        <option value="random">ランダム</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">大＝小 適用範囲</label>
+                    <select id="unify_scope" class="w-full text-[10px] font-bold">
+                        <option value="all">すべて</option>
+                        <option value="conn">接続判定のみ</option>
+                        <option value="filter">禁止・必須・重複のみ</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
                 <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_daku"> 濁点OK</label>
                 <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="allow_handaku"> 半濁点OK</label>
@@ -141,6 +154,15 @@
                 <label class="flex items-center gap-1 cursor-pointer text-blue-600"><input type="checkbox" id="once"> 単一制約</label>
                 <label class="flex items-center gap-1 cursor-pointer text-rose-600"><input type="checkbox" id="char_limit_mode"> 重複禁止</label>
                 <label class="flex items-center gap-1 cursor-pointer text-emerald-600"><input type="checkbox" id="copy_with_len" checked> 文字数含コピー</label>
+                <label class="flex items-center gap-1 cursor-pointer text-rose-500 col-span-2"><input type="checkbox" id="exclude_conjugate"> 共役排除 (同一頭尻ライバル排除)</label>
+            </div>
+
+            <div class="flex items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div class="flex flex-col flex-1 gap-1">
+                    <label class="text-[9px] font-bold text-blue-400 uppercase tracking-widest ml-1">上位コピー件数</label>
+                    <input type="number" id="copy_limit" value="10" class="w-full text-center text-xs py-2">
+                </div>
+                <button onclick="copyTopN()" class="flex-1 bg-blue-600/10 text-blue-600 py-3 rounded-xl text-[10px] font-black uppercase mt-4">Copy Top N</button>
             </div>
 
             <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -153,7 +175,7 @@
                     </div>
                 </div>
                 <div class="space-y-1 text-right">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">物理 / 文字計</label>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">物理ずらし / 文字計</label>
                     <div class="flex justify-end gap-2">
                         <input type="number" id="ps" value="0" class="w-10 text-center text-sm font-bold">
                         <input type="number" id="ttl" placeholder="計" class="w-12 text-center text-sm font-bold">
@@ -179,7 +201,7 @@
         let wordStates = {};
 
         function to_katakana(text) { return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60)); }
-        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); loadDictionaryUI(); saveSettings(); }
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); saveSettings(); }
         function getWordStyle(state) {
             if (state === 'red') return "background-color: #f43f5e; color: white; border-color: #e11d48;";
             if (state === 'blue') return "background-color: #2563eb; color: white; border-color: #1d4ed8;";
@@ -195,13 +217,17 @@
         async function init() {
             if (localStorage.ultraSettings) {
                 const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','pattern','ml','ps','ks_abs','ttl','timeout','limit','gc','cc'];
+                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','ml','ps','ks_abs','ttl','timeout','limit','gc','cc','sort_mode','unify_scope','copy_limit'];
                 fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','limit_enabled','unify_small','rt','once','copy_with_len','use_shift','exclusive_choice'];
+                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','limit_enabled','unify_small','rt','once','copy_with_len','use_shift','exclusive_choice','exclude_conjugate'];
                 checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
                 if (s.dark_mode) document.documentElement.classList.add('dark');
                 if (s.wordStates) wordStates = s.wordStates;
                 document.querySelectorAll('input[name="cat"]').forEach(c => c.checked = (s.cats || ["country"]).includes(c.value));
+                if (s.shift_mode) {
+                    const r = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`);
+                    if(r) r.checked = true;
+                }
             }
             await loadDictionaryUI();
         }
@@ -249,33 +275,44 @@
 
         function saveSettings() {
             const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
+            const sm = document.querySelector('input[name="shift_mode"]:checked');
             localStorage.ultraSettings = JSON.stringify({
                 sw: document.getElementById('sw').value, sc: document.getElementById('sc').value, asc: document.getElementById('asc').value,
                 mc: document.getElementById('mc').value, ec: document.getElementById('ec').value, aec: document.getElementById('aec').value,
-                exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value, pattern: document.getElementById('pattern').value,
+                exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value,
                 ml: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, limit: document.getElementById('limit').value,
                 gc: document.getElementById('gc').value, cc: document.getElementById('cc').value,
                 ps: document.getElementById('ps').value, ks_abs: document.getElementById('ks_abs').value, ttl: document.getElementById('ttl').value,
+                sort_mode: document.getElementById('sort_mode').value, unify_scope: document.getElementById('unify_scope').value, copy_limit: document.getElementById('copy_limit').value,
                 limit_enabled: document.getElementById('limit_enabled').checked, use_shift: document.getElementById('use_shift').checked,
                 unify_small: document.getElementById('unify_small').checked, rt: document.getElementById('rt').checked,
                 once: document.getElementById('once').checked, copy_with_len: document.getElementById('copy_with_len').checked,
-                exclusive_choice: document.getElementById('exclusive_choice').checked, dark_mode: document.documentElement.classList.contains('dark'),
+                exclusive_choice: document.getElementById('exclusive_choice').checked, exclude_conjugate: document.getElementById('exclude_conjugate').checked,
+                dark_mode: document.documentElement.classList.contains('dark'),
                 allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
                 char_limit_mode: document.getElementById('char_limit_mode').checked, auto_recovery: document.getElementById('auto_recovery').checked,
-                wordStates: wordStates, cats: cats
+                wordStates: wordStates, cats: cats, shift_mode: sm ? sm.value : 'abs'
             });
         }
 
-        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(1, parseInt(el.value) + delta); saveSettings(); }
+        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value || 0) + delta); saveSettings(); }
+
+        function parseConstraint(val) {
+            return val.split('\n').map(l => {
+                const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
+                return items.length ? items.map(item => {
+                    if (item.includes(':')) {
+                        const parts = item.split(':');
+                        return to_katakana(parts[0]) + ':' + parts[1];
+                    }
+                    return to_katakana(item);
+                }) : null;
+            }).filter(g => g);
+        }
 
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
             try {
-                const cclines = document.getElementById('cc').value.split('\n').map(l => {
-                    const items = l.split(/[、,]/).map(w => w.trim()).filter(w => w);
-                    return items.length ? items.map(item => item.includes(':') ? to_katakana(item.split(':')[0]) + ':' + item.split(':')[1] : to_katakana(item)) : null;
-                }).filter(g => g);
-
                 const r = await fetch('/search', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -285,19 +322,23 @@
                         exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
                         max_len: document.getElementById('ml').value, timeout: document.getElementById('timeout').value, 
                         limit: document.getElementById('limit').value, limit_enabled: document.getElementById('limit_enabled').checked,
-                        pos_shift: parseInt(document.getElementById('ps').value), use_shift: document.getElementById('use_shift').checked,
+                        pos_shift: parseInt(document.getElementById('ps').value || 0), use_shift: document.getElementById('use_shift').checked,
                         ks_abs: parseInt(document.getElementById('ks_abs').value), shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
                         allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
                         auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
                         unify_small: document.getElementById('unify_small').checked, round_trip: document.getElementById('rt').checked,
                         once_constraint: document.getElementById('once').checked, exclusive_choice: document.getElementById('exclusive_choice').checked,
-                        group_constraints: document.getElementById('gc').value.split('\n').map(l => l.split(/[、,]/).map(w => to_katakana(w.trim())).filter(w => w)).filter(g => g.length),
-                        choice_constraints: cclines, categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
-                        red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
+                        exclude_conjugate: document.getElementById('exclude_conjugate').checked,
+                        sort_mode: document.getElementById('sort_mode').value, unify_scope: document.getElementById('unify_scope').value,
+                        group_constraints: parseConstraint(document.getElementById('gc').value),
+                        choice_constraints: parseConstraint(document.getElementById('cc').value),
+                        categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
+                        red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue'),
+                        target_total_len: document.getElementById('ttl').value
                     })
                 });
                 const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false; display();
-            } catch(e) { btn.innerText = "Explore"; btn.disabled = false; }
+            } catch(e) { console.error(e); btn.innerText = "Explore"; btn.disabled = false; }
         }
 
         function display() {
@@ -309,19 +350,39 @@
                 </div>`).join('');
             const stats = document.getElementById('stats'); stats.innerText = `${currentRoutes.length} ROUTES FOUND`; stats.classList.remove('hidden');
         }
+
         function copyOne(i, btn) { 
             const rt = currentRoutes[i];
             const base = rt.join(' → ');
             const text = document.getElementById('copy_with_len').checked ? `${base} (${rt.join('').length}文字)` : base;
             navigator.clipboard.writeText(text); 
+            btn.innerText = "COPIED!"; btn.classList.add('bg-emerald-50', 'text-emerald-600');
+            setTimeout(() => { btn.innerText = "Copy"; btn.classList.remove('bg-emerald-50', 'text-emerald-600'); }, 1000);
         }
+
         function copyAll() { 
             const text = currentRoutes.map(rt => {
                 const base = rt.join(' → ');
                 return document.getElementById('copy_with_len').checked ? `${base} (${rt.join('').length}文字)` : base;
             }).join('\n');
             navigator.clipboard.writeText(text); 
+            const btn = document.getElementById('allCopyBtn'); btn.innerText = "DONE!";
+            setTimeout(() => btn.innerText = "All Copy", 1000);
         }
+
+        function copyTopN() {
+            const n = parseInt(document.getElementById('copy_limit').value) || 10;
+            const text = currentRoutes.slice(0, n).map(rt => {
+                const base = rt.join(' → ');
+                return document.getElementById('copy_with_len').checked ? `${base} (${rt.join('').length}文字)` : base;
+            }).join('\n');
+            navigator.clipboard.writeText(text);
+            const btn = document.querySelector('button[onclick="copyTopN()"]');
+            const originalText = btn.innerText;
+            btn.innerText = "COPIED!";
+            setTimeout(() => btn.innerText = originalText, 1000);
+        }
+
         window.onload = init;
     </script>
 </body>

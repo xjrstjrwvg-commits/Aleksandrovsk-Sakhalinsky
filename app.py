@@ -17,24 +17,30 @@ SMALL_TO_LARGE = {"ァ": "ア", "ィ": "イ", "ゥ": "ウ", "ェ": "エ", "ォ":
 DAKU_MAP = {"カ":"ガ", "キ":"ギ", "ク":"グ", "ケ":"ゲ", "コ":"ゴ", "サ":"ザ", "シ":"ジ", "ス":"ズ", "セ":"ゼ", "ソ":"ゾ", "タ":"ダ", "チ":"ヂ", "ツ":"ヅ", "テ":"デ", "ト":"ド", "ハ":"バ", "ヒ":"ビ", "フ":"ブ", "ヘ":"ベ", "ホ":"ボ"}
 HANDAKU_MAP = {"ハ":"パ", "ヒ":"ピ", "フ":"プ", "ヘ":"ペ", "ホ":"ポ"}
 
+# 逆引きマップ（濁点・半濁点から清音へ）
+REV_DAKU = {v: k for k, v in DAKU_MAP.items()}
+REV_HANDAKU = {v: k for k, v in HANDAKU_MAP.items()}
+
 # --- ユーティリティ ---
 def to_katakana(text):
     if not text: return ""
     return "".join([chr(ord(c) + 96) if 0x3041 <= ord(c) <= 0x3096 else c for c in text])
 
-def get_clean_char(w, pos="head", offset=0, unify=False):
-    # 長音を除去して判定対象にする
+def get_base_char(c, unify_small=False, unify_daku=False, unify_handaku=False):
+    """文字の正規化（小書き、濁点、半濁点の統合）"""
+    res = SMALL_TO_LARGE.get(c, c) if unify_small else c
+    if unify_daku: res = REV_DAKU.get(res, res)
+    if unify_handaku: res = REV_HANDAKU.get(res, res)
+    return res
+
+def get_clean_char(w, pos="head", offset=0, unify_s=False, unify_d=False, unify_h=False):
     text = w.replace("ー", "")
     if not text: return ""
     try:
-        # pos="tail" の場合、末尾(0)から数えて offset 分手前を取得
-        # offset=2 の場合、末尾から3番目の文字 text[-3] を指す
         idx = offset if pos == "head" else -(1 + offset)
         char = text[idx]
-        return SMALL_TO_LARGE.get(char, char) if unify else char
-    except IndexError:
-        # 文字数が足りない（例：2文字の単語で offset=2 を指定）場合は空を返す
-        return ""
+        return get_base_char(char, unify_s, unify_d, unify_h)
+    except IndexError: return ""
 
 def shift_kana(char, n):
     if char not in KANA_LIST: return char
@@ -63,62 +69,82 @@ def get_dictionary(): return jsonify(DICTIONARY_MASTER)
 def search():
     d = request.json
     timeout, limit, limit_en = int(d.get('timeout', 15)), int(d.get('limit', 1500)), d.get('limit_enabled', True)
-    max_len, p_shift, use_shift, ks_val, s_mode = int(d.get('max_len', 5)), int(d.get('pos_shift', 0)), d.get('use_shift', False), int(d.get('ks_abs', 1)), d.get('shift_mode', 'abs')
-    allow_daku, allow_handaku, unify_small = d.get('allow_daku', False), d.get('allow_handaku', False), d.get('unify_small', False)
-    u_scope = d.get('unify_scope', 'all')
-    u_conn = unify_small and u_scope in ['all', 'conn']
-    u_filt = unify_small and u_scope in ['all', 'filter']
+    max_len, p_shift = int(d.get('max_len', 5)), int(d.get('pos_shift', 0))
+    use_shift, ks_val, s_mode = d.get('use_shift', False), int(d.get('ks_abs', 1)), d.get('shift_mode', 'abs')
     
+    # 適用範囲の取得
+    u_small = d.get('unify_small', False)
+    u_daku = d.get('allow_daku', False)
+    u_handaku = d.get('allow_handaku', False)
+    scope = d.get('unify_scope', 'all')
+    
+    # 接続判定用フラグ
+    conn_s = u_small and scope in ['all', 'conn']
+    conn_d = u_daku and scope in ['all', 'conn']
+    conn_h = u_handaku and scope in ['all', 'conn']
+    
+    # フィルタ/制約用フラグ
+    filt_s = u_small and scope in ['all', 'filter']
+    filt_d = u_daku and scope in ['all', 'filter']
+    filt_h = u_handaku and scope in ['all', 'filter']
+
+    # 文字数制約 & 使える文字リスト
+    len_mode = d.get('len_mode', 'free') # 'free', 'same', 'diff'
+    raw_valid = to_katakana(d.get('valid_chars', ""))
+    valid_chars = set(raw_valid.replace("、", "").replace(",", "")) if raw_valid else None
+
     red_words, blue_words = set(d.get('red_words', [])), set(d.get('blue_words', []))
-    asc = [get_clean_char(c.strip(), "head", 0, u_filt) for c in re.split('[、,]', to_katakana(d.get('all_start_char', ""))) if c.strip()]
-    aec = [get_clean_char(c.strip(), "head", 0, u_filt) for c in re.split('[、,]', to_katakana(d.get('all_end_char', ""))) if c.strip()]
-    ex_list = [SMALL_TO_LARGE.get(c.strip(), c.strip()) if u_filt else c.strip() for c in re.split('[、,]', to_katakana(d.get('exclude_chars', ""))) if c.strip()]
-    bs_list = [SMALL_TO_LARGE.get(c.strip(), c.strip()) if u_filt else c.strip() for c in re.split('[、,]', to_katakana(d.get('ban_start_chars', ""))) if c.strip()]
-    must_chars = [SMALL_TO_LARGE.get(c, c) if u_filt else c for c in re.split('[、,]', to_katakana(d.get('must_char', ""))) if c]
+    asc = [get_clean_char(c.strip(), "head", 0, filt_s, filt_d, filt_h) for c in re.split('[、,]', to_katakana(d.get('all_start_char', ""))) if c.strip()]
+    aec = [get_clean_char(c.strip(), "head", 0, filt_s, filt_d, filt_h) for c in re.split('[、,]', to_katakana(d.get('all_end_char', ""))) if c.strip()]
+    ex_list = [get_base_char(c.strip(), filt_s, filt_d, filt_h) for c in re.split('[、,]', to_katakana(d.get('exclude_chars', ""))) if c.strip()]
+    bs_list = [get_base_char(c.strip(), filt_s, filt_d, filt_h) for c in re.split('[、,]', to_katakana(d.get('ban_start_chars', ""))) if c.strip()]
+    must_chars = [get_base_char(c, filt_s, filt_d, filt_h) for c in re.split('[、,]', to_katakana(d.get('must_char', ""))) if c]
     
     start_word = to_katakana(d.get('start_word', ""))
-    start_char = get_clean_char(to_katakana(d.get('start_char', "")), "head", 0, u_filt)
-    end_char = get_clean_char(to_katakana(d.get('end_char', "")), "head", 0, u_filt)
+    start_char = get_clean_char(to_katakana(d.get('start_char', "")), "head", 0, filt_s, filt_d, filt_h)
+    end_char = get_clean_char(to_katakana(d.get('end_char', "")), "head", 0, filt_s, filt_d, filt_h)
 
     raw_pool = []
     for cat in d.get('categories', ["country"]): raw_pool.extend(DICTIONARY_MASTER.get(cat, []))
     raw_pool = list(set(raw_pool))
 
-    conjugates = set()
-    if d.get('exclude_conjugate'):
-        combo_c = Counter()
-        w_to_combo = {}
-        for w in raw_pool:
-            c = (get_clean_char(w, "head", 0, u_filt), get_clean_char(w, "tail", 0, u_filt))
-            combo_c[c] += 1
-            w_to_combo[w] = c
-        conjugates = {w for w, c in w_to_combo.items() if combo_c[c] > 1}
-
     word_pool = []
     for w in raw_pool:
-        if w in red_words or w in conjugates: continue
-        if asc and get_clean_char(w, "head", 0, u_filt) not in asc: continue
-        if aec and get_clean_char(w, "tail", 0, u_filt) not in aec: continue
-        norm_w = "".join([SMALL_TO_LARGE.get(c, c) for c in w]) if u_filt else w
+        if w in red_words: continue
+        # 使える文字チェック
+        if valid_chars and not all(get_base_char(c, filt_s, filt_d, filt_h) in valid_chars for c in w.replace("ー", "")): continue
+        # 各種フィルタ
+        if asc and get_clean_char(w, "head", 0, filt_s, filt_d, filt_h) not in asc: continue
+        if aec and get_clean_char(w, "tail", 0, filt_s, filt_d, filt_h) not in aec: continue
+        norm_w = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in w])
         if any(ex in norm_w for ex in ex_list): continue
-        if any(get_clean_char(w, "head", 0, u_filt) == bs for bs in bs_list): continue
+        if any(get_clean_char(w, "head", 0, filt_s, filt_d, filt_h) == bs for bs in bs_list): continue
         word_pool.append(w)
     
     word_pool = list(set(word_pool))
     head_index, tail_index = defaultdict(list), defaultdict(list)
     for w in word_pool:
-        head_index[get_clean_char(w, "head", 0, u_conn)].append(w)
-        tail_index[get_clean_char(w, "tail", 0, u_conn)].append(w)
+        head_index[get_clean_char(w, "head", 0, conn_s, conn_d, conn_h)].append(w)
+        tail_index[get_clean_char(w, "tail", 0, conn_s, conn_d, conn_h)].append(w)
 
     results, start_time = [], time.time()
 
     def solve(path, current_total_len):
         if time.time() - start_time > timeout or (limit_en and len(results) >= limit): return
+        
+        # 文字数「バラバラ」制約の途中チェック
+        if len_mode == 'diff':
+            lens = [len(x) for x in path]
+            if len(lens) != len(set(lens)): return
+
         if len(path) == max_len:
+            # 文字数「すべて同じ」制約の最終チェック
+            if len_mode == 'same' and len(set(len(x) for x in path)) > 1: return
+            
             path_set = set(path)
             if not blue_words.issubset(path_set): return
             full_t = "".join(path)
-            norm_t = "".join([SMALL_TO_LARGE.get(c, c) for c in full_t]) if u_filt else full_t
+            norm_t = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in full_t])
 
             def check_list(lst):
                 for group in lst:
@@ -132,46 +158,39 @@ def search():
                     total = 0
                     for it in items:
                         shifted = "".join([shift_kana(c, g_shift) for c in it])
-                        norm_it = "".join([SMALL_TO_LARGE.get(c, c) for c in shifted]) if u_filt else shifted
+                        norm_it = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in shifted])
                         total += norm_t.count(norm_it)
                     if (d.get('exclusive_choice') and total != target_cnt) or (not d.get('exclusive_choice') and total < target_cnt): return False
                 return True
 
             if not check_list(d.get('group_constraints', [])): return
             if not check_list(d.get('choice_constraints', [])): return
-            if must_chars:
-                if d.get('once_constraint'):
-                    if not all(norm_t.count(mc) == 1 for mc in must_chars): return
-                elif not all(mc in norm_t for mc in must_chars): return
+            if must_chars and (not all(norm_t.count(mc) == (1 if d.get('once_constraint') else norm_t.count(mc)) and mc in norm_t for mc in must_chars)): return
             if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
-            if end_char and get_clean_char(path[-1], "tail", 0, u_conn) not in get_variants(end_char, allow_daku, allow_handaku, u_conn): return
+            if end_char and get_clean_char(path[-1], "tail", 0, conn_s, conn_d, conn_h) not in get_variants(end_char, u_daku, u_handaku, conn_s): return
             results.append(list(path))
             return
         
         is_odd = (len(path) % 2 != 0)
-        # 物理ずらしのロジック: p_shift 分だけ手前から抽出。足りなければ空文字となりループ終了（打ち切り）
-        base_offsets = [p_shift] + ([i for i in range(p_shift+1, len(path[-1].replace("ー","")))] if d.get('auto_recovery') else [])
+        last_clean = path[-1].replace("ー","")
+        base_offsets = [p_shift] + ([i for i in range(p_shift+1, len(last_clean))] if d.get('auto_recovery') else [])
         
         for off in base_offsets:
-            if d.get('round_trip'):
-                src = get_clean_char(path[-1], "tail" if is_odd else "head", off, u_conn)
-            else:
-                src = get_clean_char(path[-1], "tail", off, u_conn)
-            
-            # get_clean_char で文字が取れなかった場合（打ち切り条件）、次のオフセットへ行くか探索終了
+            src = get_clean_char(path[-1], ("tail" if not d.get('round_trip') or is_odd else "head"), off, conn_s, conn_d, conn_h)
             if not src: continue
-
+            
             raw_ts = {shift_kana(src, ks_val if s_mode!='abs' else abs(ks_val)), shift_kana(src, -abs(ks_val)) if s_mode=='abs' else src} if use_shift else {src}
             targets = set()
-            for rt in raw_ts: targets.update(get_variants(rt, allow_daku, allow_handaku, u_conn))
+            for rt in raw_ts: targets.update(get_variants(rt, u_daku, u_handaku, conn_s))
+            
             found = False
             for tc in targets:
                 cands = (tail_index if (d.get('round_trip') and is_odd) else head_index).get(tc, [])
                 for nxt in cands:
                     if nxt in path: continue
                     if d.get('char_limit_mode'):
-                        p_txt = "".join([SMALL_TO_LARGE.get(c,c) for c in "".join(path)]) if u_filt else "".join(path)
-                        n_txt = "".join([SMALL_TO_LARGE.get(c,c) for c in nxt]) if u_filt else nxt
+                        p_txt = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in "".join(path)])
+                        n_txt = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in nxt])
                         if not set(p_txt).isdisjoint(set(n_txt)): continue
                     found = True
                     solve(path + [nxt], current_total_len + len(nxt))
@@ -179,7 +198,7 @@ def search():
 
     starts = [start_word] if start_word in word_pool else word_pool
     for w in sorted(starts):
-        if not start_word and start_char and get_clean_char(w, "head", 0, u_filt) != start_char: continue
+        if not start_word and start_char and get_clean_char(w, "head", 0, filt_s, filt_d, filt_h) != start_char: continue
         solve([w], len(w))
     
     sm = d.get('sort_mode', 'default')

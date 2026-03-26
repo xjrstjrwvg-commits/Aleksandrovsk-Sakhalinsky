@@ -17,7 +17,6 @@ SMALL_TO_LARGE = {"ァ": "ア", "ィ": "イ", "ゥ": "ウ", "ェ": "エ", "ォ":
 DAKU_MAP = {"カ":"ガ", "キ":"ギ", "ク":"グ", "ケ":"ゲ", "コ":"ゴ", "サ":"ザ", "シ":"ジ", "ス":"ズ", "セ":"ゼ", "ソ":"ゾ", "タ":"ダ", "チ":"ヂ", "ツ":"ヅ", "テ":"デ", "ト":"ド", "ハ":"バ", "ヒ":"ビ", "フ":"ブ", "ヘ":"ベ", "ホ":"ボ"}
 HANDAKU_MAP = {"ハ":"パ", "ヒ":"ピ", "フ":"プ", "ヘ":"ペ", "ホ":"ポ"}
 
-# 逆引きマップ（濁点・半濁点から清音へ）
 REV_DAKU = {v: k for k, v in DAKU_MAP.items()}
 REV_HANDAKU = {v: k for k, v in HANDAKU_MAP.items()}
 
@@ -27,7 +26,6 @@ def to_katakana(text):
     return "".join([chr(ord(c) + 96) if 0x3041 <= ord(c) <= 0x3096 else c for c in text])
 
 def get_base_char(c, unify_small=False, unify_daku=False, unify_handaku=False):
-    """文字の正規化（小書き、濁点、半濁点の統合）"""
     res = SMALL_TO_LARGE.get(c, c) if unify_small else c
     if unify_daku: res = REV_DAKU.get(res, res)
     if unify_handaku: res = REV_HANDAKU.get(res, res)
@@ -72,24 +70,13 @@ def search():
     max_len, p_shift = int(d.get('max_len', 5)), int(d.get('pos_shift', 0))
     use_shift, ks_val, s_mode = d.get('use_shift', False), int(d.get('ks_abs', 1)), d.get('shift_mode', 'abs')
     
-    # 適用範囲の取得
-    u_small = d.get('unify_small', False)
-    u_daku = d.get('allow_daku', False)
-    u_handaku = d.get('allow_handaku', False)
+    u_small, u_daku, u_handaku = d.get('unify_small', False), d.get('allow_daku', False), d.get('allow_handaku', False)
     scope = d.get('unify_scope', 'all')
     
-    # 接続判定用フラグ
-    conn_s = u_small and scope in ['all', 'conn']
-    conn_d = u_daku and scope in ['all', 'conn']
-    conn_h = u_handaku and scope in ['all', 'conn']
-    
-    # フィルタ/制約用フラグ
-    filt_s = u_small and scope in ['all', 'filter']
-    filt_d = u_daku and scope in ['all', 'filter']
-    filt_h = u_handaku and scope in ['all', 'filter']
+    conn_s, conn_d, conn_h = (u_small and scope in ['all', 'conn']), (u_daku and scope in ['all', 'conn']), (u_handaku and scope in ['all', 'conn'])
+    filt_s, filt_d, filt_h = (u_small and scope in ['all', 'filter']), (u_daku and scope in ['all', 'filter']), (u_handaku and scope in ['all', 'filter'])
 
-    # 文字数制約 & 使える文字リスト
-    len_mode = d.get('len_mode', 'free') # 'free', 'same', 'diff'
+    len_mode = d.get('len_mode', 'free')
     raw_valid = to_katakana(d.get('valid_chars', ""))
     valid_chars = set(raw_valid.replace("、", "").replace(",", "")) if raw_valid else None
 
@@ -108,20 +95,36 @@ def search():
     for cat in d.get('categories', ["country"]): raw_pool.extend(DICTIONARY_MASTER.get(cat, []))
     raw_pool = list(set(raw_pool))
 
-    word_pool = []
+    # --- フィルタリングフェーズ ---
+    temp_pool = []
     for w in raw_pool:
         if w in red_words: continue
         # 使える文字チェック
         if valid_chars and not all(get_base_char(c, filt_s, filt_d, filt_h) in valid_chars for c in w.replace("ー", "")): continue
-        # 各種フィルタ
-        if asc and get_clean_char(w, "head", 0, filt_s, filt_d, filt_h) not in asc: continue
-        if aec and get_clean_char(w, "tail", 0, filt_s, filt_d, filt_h) not in aec: continue
+        
+        h_char = get_clean_char(w, "head", 0, filt_s, filt_d, filt_h)
+        t_char = get_clean_char(w, "tail", 0, filt_s, filt_d, filt_h)
+        if asc and h_char not in asc: continue
+        if aec and t_char not in aec: continue
         norm_w = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in w])
         if any(ex in norm_w for ex in ex_list): continue
-        if any(get_clean_char(w, "head", 0, filt_s, filt_d, filt_h) == bs for bs in bs_list): continue
-        word_pool.append(w)
-    
-    word_pool = list(set(word_pool))
+        if any(h_char == bs for bs in bs_list): continue
+        temp_pool.append(w)
+
+    # --- 共役排除 (ライバル全削除) ---
+    if d.get('exclude_conjugate'):
+        pair_map = defaultdict(list)
+        for w in temp_pool:
+            ch = get_clean_char(w, "head", 0, conn_s, conn_d, conn_h)
+            ct = get_clean_char(w, "tail", 0, conn_s, conn_d, conn_h)
+            pair_map[f"{ch}_{ct}"].append(w)
+        word_pool = []
+        for words in pair_map.values():
+            if len(words) == 1:
+                word_pool.append(words[0])
+    else:
+        word_pool = temp_pool
+
     head_index, tail_index = defaultdict(list), defaultdict(list)
     for w in word_pool:
         head_index[get_clean_char(w, "head", 0, conn_s, conn_d, conn_h)].append(w)
@@ -132,19 +135,18 @@ def search():
     def solve(path, current_total_len):
         if time.time() - start_time > timeout or (limit_en and len(results) >= limit): return
         
-        # 文字数「バラバラ」制約の途中チェック
-        if len_mode == 'diff':
+        # 文字数バラバラ制約（途中判定）
+        if len_mode == 'diff' and len(path) > 1:
             lens = [len(x) for x in path]
             if len(lens) != len(set(lens)): return
 
         if len(path) == max_len:
-            # 文字数「すべて同じ」制約の最終チェック
+            # 文字数すべて同じ制約（最終判定）
             if len_mode == 'same' and len(set(len(x) for x in path)) > 1: return
             
             path_set = set(path)
             if not blue_words.issubset(path_set): return
-            full_t = "".join(path)
-            norm_t = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in full_t])
+            norm_t = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in "".join(path)])
 
             def check_list(lst):
                 for group in lst:
@@ -152,34 +154,38 @@ def search():
                     for itm in group:
                         if ':' in itm:
                             ps = itm.split(':')
-                            if ps[0].upper() == 'S': g_shift = int(ps[1])
-                            else: target_cnt = int(ps[1] if ps[1].isdigit() else ps[0])
+                            if ps.upper() == 'S': g_shift = int(ps)
+                            else: target_cnt = int(ps if ps.isdigit() else ps)
                         else: items.append(itm)
-                    total = 0
-                    for it in items:
-                        shifted = "".join([shift_kana(c, g_shift) for c in it])
-                        norm_it = "".join([get_base_char(c, filt_s, filt_d, filt_h) for c in shifted])
-                        total += norm_t.count(norm_it)
+                    total = sum(norm_t.count("".join([get_base_char(shift_kana(c, g_shift), filt_s, filt_d, filt_h) for c in it])) for it in items)
                     if (d.get('exclusive_choice') and total != target_cnt) or (not d.get('exclusive_choice') and total < target_cnt): return False
                 return True
 
-            if not check_list(d.get('group_constraints', [])): return
-            if not check_list(d.get('choice_constraints', [])): return
-            if must_chars and (not all(norm_t.count(mc) == (1 if d.get('once_constraint') else norm_t.count(mc)) and mc in norm_t for mc in must_chars)): return
+            if not (check_list(d.get('group_constraints', [])) and check_list(d.get('choice_constraints', []))): return
+            if must_chars and not all(norm_t.count(mc) >= 1 and (norm_t.count(mc) == 1 if d.get('once_constraint') else True) for mc in must_chars): return
             if d.get('target_total_len') and current_total_len != int(d['target_total_len']): return
             if end_char and get_clean_char(path[-1], "tail", 0, conn_s, conn_d, conn_h) not in get_variants(end_char, u_daku, u_handaku, conn_s): return
             results.append(list(path))
             return
         
         is_odd = (len(path) % 2 != 0)
-        last_clean = path[-1].replace("ー","")
-        base_offsets = [p_shift] + ([i for i in range(p_shift+1, len(last_clean))] if d.get('auto_recovery') else [])
+        last_word_clean = path[-1].replace("ー","")
+        base_offsets = [p_shift] + ([i for i in range(p_shift+1, len(last_word_clean))] if d.get('auto_recovery') else [])
         
         for off in base_offsets:
+            # 1. 物理位置の文字取得
             src = get_clean_char(path[-1], ("tail" if not d.get('round_trip') or is_odd else "head"), off, conn_s, conn_d, conn_h)
             if not src: continue
             
-            raw_ts = {shift_kana(src, ks_val if s_mode!='abs' else abs(ks_val)), shift_kana(src, -abs(ks_val)) if s_mode=='abs' else src} if use_shift else {src}
+            # 2. 50音ずらしの適用 (物理位置に対しても実行)
+            raw_ts = set()
+            if use_shift:
+                raw_ts.add(shift_kana(src, ks_val if s_mode!='abs' else abs(ks_val)))
+                if s_mode == 'abs': raw_ts.add(shift_kana(src, -abs(ks_val)))
+            else:
+                raw_ts.add(src)
+            
+            # 3. 濁点等のバリエーション展開
             targets = set()
             for rt in raw_ts: targets.update(get_variants(rt, u_daku, u_handaku, conn_s))
             

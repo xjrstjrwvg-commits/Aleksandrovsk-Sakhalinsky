@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>極・ULTRA ENGINE Pro</title>
-<link href="https://cloudflare.com" rel="stylesheet">
-<script src="https://tailwindcss.com"></script>
+    <!-- Tailwind CSSの静的読み込みを追加（iPhoneでの白画面対策） -->
+    <link href="https://cloudflare.com" rel="stylesheet">
+    <script src="https://tailwindcss.com"></script>
     <style>
-        html, body { overflow-x: hidden; position: relative; width: 100%; touch-action: pan-y; }
+        html, body { overflow-x: hidden; position: relative; width: 100%; touch-action: pan-y; background-color: #f8fafc; }
         .dark { color-scheme: dark; }
+        .dark body { background-color: #020617; }
         .glass { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl; }
         input, select, textarea { @apply bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-sm outline-none focus:ring-1 ring-blue-500 font-bold; }
         .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
         ::-webkit-scrollbar { display: none; }
         .btn-white { background-color: white; color: #334155; border-color: #e2e8f0; }
         .dark .btn-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
-        .custom-scroll { max-height: 300px; overflow-y: auto; scrollbar-width: none; }
         summary { list-style: none; cursor: pointer; }
         summary::-webkit-details-marker { display: none; }
-
         details input, details select, details textarea {
             @apply border-2 border-slate-300 dark:border-slate-600 py-4 px-4 my-1;
             background-color: rgba(255, 255, 255, 0.7);
@@ -28,7 +28,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
+<body class="text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
     <div class="max-w-md mx-auto space-y-3">
         <header class="flex justify-between items-center py-1">
             <div class="flex items-center gap-3">
@@ -74,11 +74,11 @@
 
                     <div class="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
                         <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">グループ必須 (:n可)</label>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">グループ必須</label>
                             <textarea id="gc" placeholder="アメリカ,イギリス:2" class="w-full h-20 resize-none text-[10px]"></textarea>
                         </div>
                         <div class="space-y-1 text-orange-600">
-                            <label class="text-[10px] font-bold uppercase ml-1 tracking-widest">選択必須 (:n可)</label>
+                            <label class="text-[10px] font-bold uppercase ml-1 tracking-widest">選択必須</label>
                             <textarea id="cc" placeholder="ン,ン:2" class="w-full h-20 resize-none text-[10px]"></textarea>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
 
                     <div class="space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
                         <div class="flex justify-between items-center">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし (物理位置連動)</label>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
                             <input type="checkbox" id="use_shift" class="w-6 h-6 cursor-pointer accent-blue-600">
                         </div>
                         <div class="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 p-3 rounded-xl">
@@ -142,8 +142,7 @@
                         <label class="flex items-center gap-2 cursor-pointer text-blue-600"><input type="checkbox" id="once" class="w-4 h-4"> 単一制約</label>
                         <label class="flex items-center gap-2 cursor-pointer text-rose-600"><input type="checkbox" id="char_limit_mode" class="w-4 h-4"> 重複禁止</label>
                         <label class="flex items-center gap-2 cursor-pointer text-rose-500"><input type="checkbox" id="exclude_conjugate" class="w-4 h-4"> 共役排除</label>
-                        <!-- 餡式接続スイッチ追加 -->
-                        <label class="flex items-center gap-2 cursor-pointer text-amber-600"><input type="checkbox" id="an_shiki_mode" class="w-4 h-4"> 餡式接続</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-amber-600 font-black"><input type="checkbox" id="an_shiki_mode" class="w-4 h-4"> 餡式接続</label>
                     </div>
 
                     <div class="space-y-1 text-right border-t border-slate-200 dark:border-slate-700 pt-4">
@@ -224,28 +223,32 @@
 
         async function init() {
             if (localStorage.ultraSettings) {
-                const s = JSON.parse(localStorage.ultraSettings);
-                const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','ml','ps','ks_abs','ttl','gc','cc','sort_mode','unify_scope','copy_limit','valid_chars','len_mode'];
-                fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','unify_small','rt','once','use_shift','exclude_conjugate', 'an_shiki_mode'];
-                checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
-                if (s.dark_mode) document.documentElement.classList.add('dark');
-                if (s.wordStates) wordStates = s.wordStates;
+                try {
+                    const s = JSON.parse(localStorage.ultraSettings);
+                    const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','ml','ps','ks_abs','ttl','gc','cc','sort_mode','unify_scope','copy_limit','valid_chars','len_mode'];
+                    fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
+                    const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','unify_small','rt','once','use_shift','exclude_conjugate','an_shiki_mode'];
+                    checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
+                    if (s.dark_mode) document.documentElement.classList.add('dark');
+                    if (s.wordStates) wordStates = s.wordStates;
+                } catch(e) {}
             }
             await loadDictionaryUI();
         }
 
         async function loadDictionaryUI() {
-            const r = await fetch('/get_dictionary');
-            const dict = await r.json();
-            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            let words = [];
-            cats.forEach(c => words = words.concat(dict[c] || []));
-            words = Array.from(new Set(words)).sort();
-            document.getElementById('dict-list').innerHTML = words.map(w => {
-                const s = wordStates[w] || 'white';
-                return `<button onclick="toggleWordState(this, '${w}')" class="p-2 rounded-lg border text-[10px] font-bold ${s==='white'?'btn-white':''}" style="${getWordStyle(s)}">${w}</button>`;
-            }).join('');
+            try {
+                const r = await fetch('/get_dictionary');
+                const dict = await r.json();
+                const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
+                let words = [];
+                cats.forEach(c => words = words.concat(dict[c] || []));
+                words = Array.from(new Set(words)).sort();
+                document.getElementById('dict-list').innerHTML = words.map(w => {
+                    const s = wordStates[w] || 'white';
+                    return `<button onclick="toggleWordState(this, '${w}')" class="p-2 rounded-lg border text-[10px] font-bold ${s==='white'?'btn-white':''}" style="${getWordStyle(s)}">${w}</button>`;
+                }).join('');
+            } catch(e) {}
         }
 
         function toggleWordState(btn, word) {
@@ -301,8 +304,10 @@
                 categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
                 red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
             };
-            const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-            const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false; display();
+            try {
+                const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+                const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false; display();
+            } catch(e) { btn.innerText = "Explore"; btn.disabled = false; }
         }
 
         function display() {

@@ -5,19 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>極・ULTRA ENGINE Pro</title>
     <style>
+        /* 基本スタイル - これが読み込まれないと白背景になります */
         :root { --bg: #f8fafc; --text: #0f172a; --glass: #ffffff; --border: #e2e8f0; --accent: #2563eb; --input-bg: #f1f5f9; }
         .dark { --bg: #020617; --text: #f1f5f9; --glass: #0f172a; --border: #1e293b; --accent: #3b82f6; --input-bg: #1e293b; }
         
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; writing-mode: horizontal-tb !important; -webkit-writing-mode: horizontal-tb !important; }
 
-        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.2; overflow-x: hidden; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.2; overflow-x: hidden; min-height: 100vh; }
         .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
         .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
         header { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
         .title { font-weight: 900; color: var(--accent); font-style: italic; text-transform: uppercase; font-size: 16px; }
         
-        input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; }
+        input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; -webkit-appearance: none; }
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         
@@ -37,7 +38,7 @@
         .sticky-close { position: sticky; top: 0; z-index: 10000; width: 100%; padding: 12px; font-weight: 900; cursor: pointer; border: none; background: #ef4444; color: white; border-radius: 10px; margin-bottom: 10px; }
 
         summary { font-size: 10px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 5px; list-style: none; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body onchange="saveSettings()">
@@ -137,8 +138,6 @@
                 <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ULTRA SCORE</div><div id="stat_score" style="font-size:24px; font-weight:900;">0</div></div>
             </div>
             <div id="rank_display" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;"></div>
-            
-            <!-- コピーツール追加 -->
             <div id="copy_tools" style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 8px; align-items: center;">
                 <div class="step-container" style="flex: 1.2;">
                     <span style="font-size: 9px; font-weight: 900;">上位</span>
@@ -156,11 +155,6 @@
 
     <div id="dict-manager">
         <button onclick="closeDict()" class="sticky-close">CLOSE DICTIONARY</button>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
-            <button onclick="bulkDictSet('red')" style="background:#f43f5e; color:white; font-size:10px; padding:12px 5px;">ALL 除外</button>
-            <button onclick="bulkDictSet('white')" style="background:#e2e8f0; color:#0f172a; font-size:10px; padding:12px 5px;">ALL リセット</button>
-            <button onclick="bulkDictSet('blue')" style="background:#2563eb; color:white; font-size:10px; padding:12px 5px;">ALL 必須</button>
-        </div>
         <div id="dict-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;"></div>
     </div>
 
@@ -192,21 +186,6 @@
             loadDictionaryUI(); saveSettings();
         }
 
-        async function bulkDictSet(state) {
-            if(!confirm(state==='white'?"全てリセットしますか？":"表示中を全て変更しますか？")) return;
-            const r = await fetch('/get_dictionary'); const dict = await r.json();
-            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            cats.forEach(c => { (dict[c]||[]).forEach(w => { if(state==='white') delete wordStates[w]; else wordStates[w]=state; }); });
-            saveSettings(); loadDictionaryUI();
-        }
-
-        function allReset() {
-            if(confirm("全ての入力設定、および辞書の除外・必須設定を完全に初期化しますか？")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
         async function run() {
             const btn = document.getElementById('btn'); btn.innerText = "WAIT..."; btn.disabled = true;
             const body = {
@@ -228,23 +207,15 @@
         function updateUI(count, score) {
             document.getElementById('stat_count').innerText = count.toLocaleString();
             document.getElementById('stat_score').innerText = score.toLocaleString();
-            
             let r20 = 1;
-            if (score > 2000000) r20 = 19 + Math.min(1, Math.floor((score - 2000000) / 1000000));
-            else if (score > 500000) r20 = 16 + Math.floor((score - 500000) / 500000);
-            else if (score > 100000) r20 = 12 + Math.floor((score - 100000) / 100000);
-            else if (score > 20000)  r20 = 8 + Math.floor((score - 20000) / 20000);
-            else if (score > 5000)   r20 = 4 + Math.floor((score - 5000) / 3750);
-            else r20 = Math.max(1, Math.ceil(score / 1250));
-            r20 = Math.min(20, r20);
-
+            if (score > 2000000) r20 = 20;
+            else if (score > 1000000) r20 = 19;
+            else if (score > 500000) r20 = 16 + Math.floor((score - 500000) / 125000);
+            else r20 = Math.max(1, Math.ceil(score / 30000));
+            
             const colors = { iron: "#1a1a1a", bronze: "#cd7f32", silver: "#c0c0c0", gold: "#ffd700", platinum: "#e5e4e2", diamond: "#b9f2ff" };
             let bg = r20<=3?colors.iron:r20<=7?colors.bronze:r20<=11?colors.silver:r20<=15?colors.gold:r20<=18?colors.platinum:colors.diamond;
-            document.getElementById('rank_display').innerHTML = `
-                <span class="badge" style="background:#2563eb;">5階級: ${['E','D','C','B','A'][Math.min(4, Math.floor(r20/4))]}</span>
-                <span class="badge" style="background:#10b981;">10階級: ${Math.ceil(r20/2)}</span>
-                <span class="badge" style="background:${bg}; color:${r20<=7?'#fff':'#000'}; border:1px solid rgba(0,0,0,0.1);">Rank ${r20}</span>
-            `;
+            document.getElementById('rank_display').innerHTML = `<span class="badge" style="background:${bg}; color:${r20<=7?'#fff':'#000'};">Rank ${r20}</span>`;
             document.getElementById('stats').classList.remove('hidden'); display();
         }
 
@@ -268,8 +239,7 @@
                 if (withLen) line += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
                 return line;
             }).join('\n\n');
-            navigator.clipboard.writeText(text);
-            alert(`${targets.length}件コピーしました`);
+            navigator.clipboard.writeText(text); alert(`${targets.length}件コピー完了`);
         }
 
         function saveSettings() {
@@ -284,6 +254,8 @@
             Object.keys(s).forEach(k => { const el = document.getElementById(k); if(el) { if(el.type==='checkbox') el.checked=s[k]; else el.value=s[k]; } });
             loadDictionaryUI();
         };
+
+        function allReset() { if(confirm("初期化しますか？")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>

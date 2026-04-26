@@ -10,7 +10,7 @@
         
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.3; overflow-x: hidden; min-height: 100vh; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.3; overflow-x: hidden; min-height: 100vh; transition: background 0.3s; }
         .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
         .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
@@ -19,13 +19,11 @@
         
         input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; -webkit-appearance: none; }
         
-        /* 物理・ずらし等の操作パネル（重なり防止） */
-        .step-container { display: flex; align-items: center; justify-content: space-between; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 5px 10px; min-width: 130px; border: 1px solid transparent; }
-        .step-container:focus-within { border-color: var(--accent); }
+        /* 操作パネルの重なり防止 */
+        .step-container { display: flex; align-items: center; justify-content: space-between; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 5px 10px; min-width: 130px; }
         .step-container span { font-size: 10px; font-weight: 900; opacity: 0.6; white-space: nowrap; }
-        .step-container input { width: 45px !important; padding: 0 !important; text-align: center !important; background: none !important; font-size: 15px; border: none !important; }
-        .step-btn { width: 30px; height: 30px; background-color: var(--border); display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; user-select: none; }
-        .step-btn:active { transform: scale(0.9); }
+        .step-container input { width: 45px !important; padding: 0 !important; text-align: center !important; background: none !important; font-size: 15px; font-weight: 900; }
+        .step-btn { width: 30px; height: 30px; background-color: var(--border); display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; }
 
         /* チェックボックスの視覚強化 */
         input[type="checkbox"] { 
@@ -45,18 +43,17 @@
         .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 5px; padding: 10px 0; }
         label { display: flex !important; align-items: center !important; font-size: 11px; font-weight: 900; cursor: pointer; }
 
-        #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; padding: 15px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
-        #btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; padding: 15px; }
         
         /* 検索結果・牛耕式表示 */
         .res-card { background: var(--glass); border-radius: 18px; padding: 18px; border: 1px solid var(--border); margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
         .ln-norm { text-align: left; font-weight: 700; }
         .ln-rev { text-align: right; color: var(--accent); font-weight: 900; }
         
-        .badge { font-size: 10px; font-weight: 900; padding: 6px 12px; border-radius: 8px; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .badge { font-size: 10px; font-weight: 900; padding: 6px 12px; border-radius: 8px; color: white; }
         
-        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 0; display: none; overflow-y: auto; }
-        .dict-header { position: sticky; top: 0; background: #ef4444; color: white; padding: 15px; text-align: center; font-weight: 900; cursor: pointer; z-index: 10; }
+        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: none; overflow-y: auto; }
+        .sticky-close { position: sticky; top: 0; background: #ef4444; color: white; padding: 15px; text-align: center; font-weight: 900; cursor: pointer; z-index: 100; }
         
         summary { font-size: 11px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 8px; list-style: none; border-top: 1px solid var(--border); }
         .hidden { display: none !important; }
@@ -76,7 +73,7 @@
         <div class="glass">
             <div class="grid-2" style="margin-bottom:10px;">
                 <input id="start_word" placeholder="開始単語" autocomplete="off">
-                <input id="must_char" placeholder="必須(あ、い、う)" autocomplete="off">
+                <input id="must_char" placeholder="必須文字" autocomplete="off">
             </div>
             <div class="grid-2" style="margin-bottom:10px;">
                 <input id="sc" placeholder="開始字" autocomplete="off">
@@ -122,7 +119,6 @@
                         <label><input type="checkbox" id="copy_with_len" checked> 文字数付与</label>
                         <label><input type="checkbox" id="copy_with_index" checked> 番号付与</label>
                         <label><input type="checkbox" id="early_stop" checked> 到達打切</label>
-                        <label><input type="checkbox" id="once_constraint"> 単一制約</label>
                     </div>
                 </div>
             </details>
@@ -138,7 +134,7 @@
             </div>
         </div>
 
-        <!-- 統計・コピーエリア -->
+        <!-- 統計エリア -->
         <div id="stats" class="hidden glass" style="text-align:center;">
             <div style="display:flex; justify-content:space-around; margin-bottom:12px;">
                 <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ROUTES</div><div id="stat_count" style="font-size:24px; font-weight:900; color:var(--accent);">0</div></div>
@@ -158,13 +154,12 @@
             </div>
         </div>
 
-        <!-- 結果表示 -->
         <div id="res"></div>
     </div>
 
     <!-- 辞書マネージャー -->
     <div id="dict-manager">
-        <div class="dict-header" onclick="closeDict()">CLOSE DICTIONARY (TAP HERE)</div>
+        <div class="sticky-close" onclick="closeDict()">CLOSE DICTIONARY (TAP HERE)</div>
         <div id="dict-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; padding:15px;"></div>
     </div>
 
@@ -196,7 +191,7 @@
                     const s = wordStates[w] || 'white';
                     const bg = s === 'red' ? '#f43f5e' : s === 'blue' ? '#2563eb' : 'var(--input-bg)';
                     const co = s === 'white' ? 'var(--text)' : 'white';
-                    return `<button onclick="toggleWord('${w}')" style="background:${bg}; color:${co}; font-size:11px; padding:10px; border-radius:8px; border:1px solid var(--border);">${w}</button>`;
+                    return `<button onclick="toggleWord('${w}')" style="background:${bg}; color:${co}; font-size:11px; padding:10px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">${w}</button>`;
                 }).join('');
             } catch (e) {}
         }
@@ -210,7 +205,7 @@
 
         async function run() {
             const btn = document.getElementById('btn');
-            btn.innerText = "EXPLORING...";
+            btn.innerText = "WAIT...";
             btn.disabled = true;
 
             const body = {
@@ -233,7 +228,7 @@
                 currentRoutes = d.routes || [];
                 updateUI(d.count, d.score);
             } catch (e) {
-                alert("探索中にエラーが発生しました。");
+                alert("探索失敗");
             }
             btn.innerText = "EXPLORE";
             btn.disabled = false;
@@ -243,7 +238,6 @@
             document.getElementById('stat_count').innerText = count.toLocaleString();
             document.getElementById('stat_score').innerText = score.toLocaleString();
             
-            // 20段階ランク計算
             let r20 = 1;
             if (score > 1000000) r20 = 18 + Math.min(2, Math.floor(score/1000000));
             else if (score > 500000) r20 = 15 + Math.floor((score-500000)/150000);
@@ -272,59 +266,29 @@
             document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => {
                 const lines = rt.map((w, idx) => {
                     const rev = isRt && idx % 2 !== 0;
-                    // 牛耕式表示：偶数行は反転文字＋右寄せ＋左矢印
-                    return `<div class="${rev ? 'ln-rev' : 'ln-norm'}">
-                        ${rev ? w.split('').reverse().join('') + ' ◀' : (idx > 0 ? '▶ ' : '') + w}
-                    </div>`;
+                    return `<div class="${rev ? 'ln-rev' : 'ln-norm'}">${rev ? w.split('').reverse().join('') + ' ◀' : (idx > 0 ? '▶ ' : '') + w}</div>`;
                 });
-                return `
-                    <div class="res-card">
-                        <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.5; margin-bottom:8px;">
-                            <span>#${i+1} (${rt.join('').length}字)</span>
-                            <button onclick="copyOne(${i}, this)" style="width:auto; padding:2px 8px; font-size:9px;">COPY</button>
-                        </div>
-                        ${lines.join('')}
-                    </div>`;
+                return `<div class="res-card"><div style="font-size:10px; opacity:0.5; margin-bottom:8px;">#${i+1} (${rt.join('').length}字)</div>${lines.join('')}</div>`;
             }).join('');
         }
 
-        function copyOne(i, btn) {
-            const rt = currentRoutes[i];
-            const nl = document.getElementById('copy_newline').checked;
-            const isRt = document.getElementById('rt').checked;
-            
-            let displayRt = rt.map((w, idx) => (isRt && idx % 2 !== 0) ? w.split('').reverse().join('') : w);
-            let text = displayRt.join(nl ? '\n' : ' → ');
-            
-            if(document.getElementById('copy_with_len').checked) {
-                text += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
-            }
-            
-            navigator.clipboard.writeText(text);
-            const oldText = btn.innerText;
-            btn.innerText = "OK!";
-            setTimeout(() => btn.innerText = oldText, 800);
-        }
-
         function copyBulk(type) {
-            if (!currentRoutes.length) return;
             const num = type === 'top' ? parseInt(document.getElementById('copy_num').value) || 10 : currentRoutes.length;
             const targets = currentRoutes.slice(0, num);
-            
             const nl = document.getElementById('copy_newline').checked;
             const withLen = document.getElementById('copy_with_len').checked;
             const withIdx = document.getElementById('copy_with_index').checked;
             const isRt = document.getElementById('rt').checked;
 
             const text = targets.map((rt, i) => {
-                let displayRt = rt.map((w, idx) => (isRt && idx % 2 !== 0) ? w.split('').reverse().join('') : w);
-                let line = (withIdx ? `${i+1}: ` : "") + displayRt.join(nl ? '\n' : ' → ');
+                let dRt = rt.map((w, idx) => (isRt && idx % 2 !== 0) ? w.split('').reverse().join('') : w);
+                let line = (withIdx ? `${i+1}: ` : "") + dRt.join(nl ? '\n' : ' → ');
                 if (withLen) line += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
                 return line;
             }).join('\n\n');
 
             navigator.clipboard.writeText(text);
-            alert(`${targets.length}件のルートをコピーしました。`);
+            alert(`${targets.length}件完了`);
         }
 
         function saveSettings() {
@@ -332,11 +296,11 @@
             document.querySelectorAll('input, select').forEach(el => {
                 if (el.id) s[el.id] = el.type === 'checkbox' ? el.checked : el.value;
             });
-            localStorage.setItem('ultra_pro_final_config', JSON.stringify(s));
+            localStorage.setItem('ultra_config_v16', JSON.stringify(s));
         }
 
         window.onload = () => {
-            const s = JSON.parse(localStorage.getItem('ultra_pro_final_config') || "{}");
+            const s = JSON.parse(localStorage.getItem('ultra_config_v16') || "{}");
             wordStates = s.wordStates || {};
             Object.keys(s).forEach(k => {
                 const el = document.getElementById(k);
@@ -348,7 +312,7 @@
         };
 
         function allReset() {
-            if(confirm("全ての履歴と設定を初期化しますか？")) {
+            if(confirm("全て初期化しますか？")) {
                 localStorage.clear();
                 location.reload();
             }

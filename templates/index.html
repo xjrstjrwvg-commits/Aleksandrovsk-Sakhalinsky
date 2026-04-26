@@ -19,12 +19,15 @@
         
         input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; -webkit-appearance: none; }
         
-        /* チェックボックス視認性強化 */
+        /* チェックボックス視覚強化 */
         input[type="checkbox"] { 
+            -webkit-appearance: none; appearance: none;
             width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; 
-            cursor: pointer; accent-color: var(--accent); flex-shrink: 0; 
-            border: 2px solid var(--border); border-radius: 6px;
+            background-color: var(--input-bg); border: 2px solid var(--border); border-radius: 6px;
+            cursor: pointer; position: relative; transition: 0.2s; flex-shrink: 0;
         }
+        input[type="checkbox"]:checked { background-color: var(--accent) !important; border-color: var(--accent) !important; }
+        input[type="checkbox"]:checked::after { content: "✔"; position: absolute; color: white; font-size: 14px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
         label:has(input:checked) { color: var(--accent); font-weight: 900; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

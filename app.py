@@ -6,23 +6,18 @@ from collections import Counter, defaultdict
 try:
     from dictionary import DICTIONARY_MASTER
 except ImportError:
-    # 辞書ファイルがない場合のフォールバック用
-    DICTIONARY_MASTER = {
-        "country": ["ニホン", "イタリア", "アメリカ", "ドイツ"],
-        "capital": ["トウキョウ", "ローマ"]
-    }
+    DICTIONARY_MASTER = {"country": ["ニホン", "イタリア", "アメリカ", "ドイツ"], "capital": ["トウキョウ", "ローマ"]}
 
 sys.setrecursionlimit(20000)
 app = Flask(__name__)
 
-# --- 正規化用マッピング（独立分離） ---
+# --- 正規化用マッピング ---
 SMALL_TO_LARGE = {"ァ": "ア", "ィ": "イ", "ゥ": "ウ", "ェ": "エ", "ォ": "オ", "ッ": "ツ", "ャ": "ヤ", "ュ": "ユ", "ョ": "ヨ", "ヮ": "ワ"}
 DAKU_MAP = {"ガ":"カ", "ギ":"キ", "グ":"ク", "ゲ":"ケ", "ゴ":"コ", "ザ":"サ", "ジ":"シ", "ズ":"ス", "ゼ":"セ", "ゾ":"ソ", "ダ":"タ", "ヂ":"チ", "ヅ":"ツ", "デ":"テ", "ド":"ト", "バ":"ハ", "ビ":"ヒ", "ブ":"フ", "ベ":"ヘ", "ボ":"ホ"}
 HANDAKU_MAP = {"パ":"ハ", "ピ":"ヒ", "プ":"フ", "ペ":"ヘ", "ポ":"ホ"}
 
 def to_kana(text):
     if not text: return ""
-    # ひらがなをカタカナに変換
     return "".join([chr(ord(c) + 96) if 0x3041 <= ord(c) <= 0x3096 else c for c in str(text)])
 
 def get_base_char(c, unify_s=False, unify_d=False, unify_h=False):
@@ -41,18 +36,15 @@ def get_clean_char(w, pos="tail", offset=0, unify_s=False, unify_d=False, unify_
     except IndexError: return None
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/get_dictionary')
-def get_dict():
-    return jsonify(DICTIONARY_MASTER)
+def get_dict(): return jsonify(DICTIONARY_MASTER)
 
 @app.route('/search', methods=['POST'])
 def search():
     try:
         d = request.get_json()
-        
         max_len = int(d.get('max_len', 5))
         ks_abs = int(d.get('ks_abs', 0))
         p_shift = int(d.get('p_shift', 0))
@@ -72,7 +64,6 @@ def search():
         ec_req = to_kana(d.get('ec', ""))
         exc_chars = set([get_base_char(c, u_small, u_daku, u_handaku) for c in split_input('exc')])
 
-        # 1. 辞書構築
         all_cats = d.get('categories', ["country"])
         red_words = set(d.get('red_words', []))
         blue_words = set(d.get('blue_words', []))
@@ -84,10 +75,8 @@ def search():
             all_pool_count += len(pool)
             for w in pool:
                 if w in red_words: continue
-                # 正規化後の文字チェック
                 w_norm = "".join([get_base_char(c, u_small, u_daku, u_handaku) for c in to_kana(w)])
                 if exc_chars and not set(w_norm).isdisjoint(exc_chars): continue
-                # 共役排除（頭と尾が同じ文字）
                 if d.get('exclude_conjugate') and get_clean_char(w, "head", 0, u_small, u_daku, u_handaku) == get_clean_char(w, "tail", 0, u_small, u_daku, u_handaku): continue
                 word_pool.append(w)
         
@@ -100,24 +89,14 @@ def search():
         results = []
         start_time = time.time()
 
-        # 2. 探索エンジン
         def solve(path, current_len):
-            # タイムアウト
             if time.time() - start_time > timeout_val: return
-            # 打ち切り
             if early_stop and len(results) >= limit_x: return
-
             if len(path) == max_len:
                 full_norm = "".join([get_base_char(c, u_small, u_daku, u_handaku) for c in "".join([to_kana(w) for w in path])])
-                
-                # 末尾指定
                 if ec_req and get_clean_char(path[-1], "tail", 0, u_small, u_daku, u_handaku) != get_base_char(ec_req, u_small, u_daku, u_handaku): return
-                # 必須単語（青単語）
                 if blue_words and not blue_words.issubset(set(path)): return
-                # 合計文字数指定
                 if d.get('target_total') and current_len != int(d.get('target_total')): return
-                
-                # 必須文字出現数
                 for m in mc_raw_list:
                     char_part, target = (m.split(':') + ["1"])[:2]
                     target = int(target) if target.isdigit() else 1
@@ -127,8 +106,6 @@ def search():
                         if actual != target: return
                     else:
                         if actual < target: return
-
-                # 正順制約
                 mo_list = split_input('must_order')
                 if mo_list:
                     curr = 0
@@ -136,43 +113,28 @@ def search():
                         curr = full_norm.find(get_base_char(c, u_small, u_daku, u_handaku), curr)
                         if curr == -1: return
                         curr += 1
-                
-                # 端点制約
                 ec_list = split_input('edge_chars')
                 if ec_list:
                     edges = {get_clean_char(w,"head",0,u_small,u_daku,u_handaku) for w in path} | {get_clean_char(w,"tail",0,u_small,u_daku,u_handaku) for w in path}
                     if not set([get_base_char(c, u_small, u_daku, u_handaku) for c in ec_list]).issubset(edges): return
-
                 results.append(list(path))
                 return
-
-            # 次の単語を探す
             src = get_clean_char(path[-1], "tail", p_shift, u_small, u_daku, u_handaku)
             if not src: return
-            
             targets = {src}
             KANA_LIST = "アイウエオカキクケコガギグゲゴサシスセソザジズゼゾタチツテトダヂヅデドナニヌネノハヒフヘホバビブベボパピプペポマミムメモヤユヨラリルレロワン"
-            
-            # ずらし有効
             if d.get('use_shift') and src in KANA_LIST:
                 idx = KANA_LIST.index(src)
-                if d.get('shift_mode') == 'abs': 
-                    targets = {KANA_LIST[(idx+ks_abs)%len(KANA_LIST)], KANA_LIST[(idx-ks_abs)%len(KANA_LIST)]}
-                else: 
-                    targets = {KANA_LIST[(idx+ks_abs)%len(KANA_LIST)]}
-
+                if d.get('shift_mode') == 'abs': targets = {KANA_LIST[(idx+ks_abs)%len(KANA_LIST)], KANA_LIST[(idx-ks_abs)%len(KANA_LIST)]}
+                else: targets = {KANA_LIST[(idx+ks_abs)%len(KANA_LIST)]}
             for t in targets:
                 for nxt in head_idx.get(t, []):
                     if nxt in path: continue
-                    # 文字数ルール（同長・異長）
-                    if d.get('len_mode') == 'same' and len(nxt) != len(path[0]): continue
+                    if d.get('len_mode') == 'same' and len(nxt) != len(path): continue
                     if d.get('len_mode') == 'diff' and len(nxt) in [len(x) for x in path]: continue
-                    # 重複禁止（文字重複）
                     if d.get('char_limit_mode') and not set("".join([to_kana(x) for x in path])).isdisjoint(set(to_kana(nxt))): continue
-                    
                     solve(path + [nxt], current_len + len(nxt))
 
-        # 3. 実行
         sw = to_kana(d.get('start_word', ""))
         starts = [sw] if sw in word_pool else word_pool
         for w in starts:
@@ -180,32 +142,25 @@ def search():
             if early_stop and len(results) >= limit_x: break
             solve([w], len(w))
 
-        # ソート処理
         sort_mode = d.get('sort_mode', 'default')
         if sort_mode == 'len_asc': results.sort(key=lambda x: (len("".join(x)), x))
         elif sort_mode == 'len_desc': results.sort(key=lambda x: (len("".join(x)), x), reverse=True)
         elif sort_mode == 'random': random.shuffle(results)
         else: results.sort()
 
-        # 4. スコア計算
         sol_c = len(results)
         Co, So, P = max_len**2, round(10/math.sqrt(sol_c+1), 2), 1+(p_shift*0.5)
         Sh = 1+(math.sqrt(ks_abs)*(2 if d.get('shift_mode')=='abs' else 1)) if d.get('use_shift') else 1
         Ch, L = (5 if d.get('char_limit_mode') else 1), (3 if d.get('len_mode')=='same' else 1.5 if d.get('len_mode')=='diff' else 1)
         Cw, Ex = (1.3 if d.get('rt') else 1), (1.5 if d.get('exclude_conjugate') else 1)
-        
         n_sum = sum([int(m.split(':')[-1]) if ':' in m and m.split(':')[-1].isdigit() else 1 for m in mc_raw_list])
         Mc, On = 1.2**n_sum, (1+0.2*n_sum if d.get('once_constraint') else 1)
         Bl, Ed = 1.3**len(split_input('must_order')), 1.2**len(split_input('edge_chars'))
         Re, Ar = all_pool_count/(len(word_pool)+1), (0.7 if d.get('auto_recovery') else 1)
-        
         Wi = (n_sum-max_len)**2 if (n_sum-max_len)**2 >=1 else 1
         score = int(round(Co*So*P*Sh*Ch*L*Cw*Ex*Mc*On*Bl*Re*Ar*Wi*Ed, 0))
-
         return jsonify({"routes": results, "count": sol_c, "score": score})
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception as e: return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))

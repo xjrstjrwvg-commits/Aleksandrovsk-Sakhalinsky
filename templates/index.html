@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>極・ULTRA ENGINE Pro</title>
     <style>
-        /* 基本スタイル - これが読み込まれないと白背景になります */
         :root { --bg: #f8fafc; --text: #0f172a; --glass: #ffffff; --border: #e2e8f0; --accent: #2563eb; --input-bg: #f1f5f9; }
         .dark { --bg: #020617; --text: #f1f5f9; --glass: #0f172a; --border: #1e293b; --accent: #3b82f6; --input-bg: #1e293b; }
         
@@ -20,14 +19,19 @@
         
         input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; -webkit-appearance: none; }
         
+        /* チェックボックス視認性強化 */
+        input[type="checkbox"] { 
+            width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; 
+            cursor: pointer; accent-color: var(--accent); flex-shrink: 0; 
+            border: 2px solid var(--border); border-radius: 6px;
+        }
+        label:has(input:checked) { color: var(--accent); font-weight: 900; }
+
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        
         .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 4px; padding: 8px 0; }
         label { display: flex !important; align-items: center !important; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap; }
-        input[type="checkbox"] { width: 18px !important; height: 18px !important; margin: 0 6px 0 0 !important; flex-shrink: 0; }
 
         #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; margin-top: 5px; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
-        
         .step-container { display: flex; align-items: center; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 3px 6px; }
         .step-btn { background-color: var(--border); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; color: var(--text); }
         
@@ -36,7 +40,6 @@
         
         #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 15px; overflow-y: auto; display: none; }
         .sticky-close { position: sticky; top: 0; z-index: 10000; width: 100%; padding: 12px; font-weight: 900; cursor: pointer; border: none; background: #ef4444; color: white; border-radius: 10px; margin-bottom: 10px; }
-
         summary { font-size: 10px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 5px; list-style: none; }
         .hidden { display: none !important; }
     </style>
@@ -65,26 +68,13 @@
             <details id="details_menu">
                 <summary>＋ ADVANCED SETTINGS</summary>
                 <div style="padding-top:10px; display:flex; flex-direction:column; gap:10px;">
+                    <div class="grid-2"><input id="must_order" placeholder="正順(ア、イ、ウ)"><input id="edge_chars" placeholder="端点(さ、か)"></div>
                     <div class="grid-2">
-                        <input id="must_order" placeholder="正順(ア、イ、ウ)">
-                        <input id="edge_chars" placeholder="端点(さ、か)">
-                    </div>
-                    <div class="grid-2">
-                        <div class="step-container">
-                            <span style="font-size:9px; opacity:0.6;">物理</span>
-                            <div class="step-btn" onclick="step('p_shift',-1)">-</div>
-                            <input id="p_shift" value="0" style="width:25px; padding:0; text-align:center; background:none;" readonly>
-                            <div class="step-btn" onclick="step('p_shift',1)">+</div>
-                        </div>
+                        <div class="step-container"><span style="font-size:9px; opacity:0.6;">物理</span><div class="step-btn" onclick="step('p_shift',-1)">-</div><input id="p_shift" value="0" style="width:25px; text-align:center; background:none;" readonly><div class="step-btn" onclick="step('p_shift',1)">+</div></div>
                         <input id="exc" placeholder="全体除外文字">
                     </div>
                     <div class="grid-2">
-                        <div class="step-container">
-                            <span style="font-size:9px; opacity:0.6;">ずらし</span>
-                            <div class="step-btn" onclick="step('ks_abs',-1)">-</div>
-                            <input id="ks_abs" value="0" style="width:25px; padding:0; text-align:center; background:none;" readonly>
-                            <div class="step-btn" onclick="step('ks_abs',1)">+</div>
-                        </div>
+                        <div class="step-container"><span style="font-size:9px; opacity:0.6;">ずらし</span><div class="step-btn" onclick="step('ks_abs',-1)">-</div><input id="ks_abs" value="0" style="width:25px; text-align:center; background:none;" readonly><div class="step-btn" onclick="step('ks_abs',1)">+</div></div>
                         <input id="target_total" type="number" placeholder="合計文字数指定">
                     </div>
                     <div class="grid-2">
@@ -92,14 +82,9 @@
                         <label>Ｔアウト <input id="timeout_val" type="number" value="15"></label>
                     </div>
                     <div class="grid-2">
-                        <select id="sort_mode">
-                            <option value="default">順:50音</option>
-                            <option value="len_asc">順:字数少</option>
-                            <option value="len_desc">順:字数多</option>
-                            <option value="random">順:ランダム</option>
-                        </select>
-                        <select id="len_mode"><option value="free">文字数:自由</option><option value="same">文字数:同長</option><option value="diff">文字数:異長</option></select>
-                        <select id="shift_mode"><option value="abs">選択式±</option><option value="normal">通常+</option></select>
+                        <select id="sort_mode"><option value="default">順:50音</option><option value="len_asc">少字数</option><option value="len_desc">多字数</option><option value="random">ランダム</option></select>
+                        <select id="len_mode"><option value="free">自由長</option><option value="same">同長</option><option value="diff">異長</option></select>
+                        <select id="shift_mode"><option value="abs">選択±</option><option value="normal">通常+</option></select>
                     </div>
                     <div class="checkbox-group">
                         <label><input type="checkbox" id="early_stop" checked> 到達打切</label>
@@ -119,9 +104,9 @@
 
             <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
                 <div class="step-container" style="flex:1;">
-                    <span style="font-weight:900; font-size:11px;">単語数</span>
+                    <span style="font-weight:900; font-size:11px;">連鎖</span>
                     <div class="step-btn" onclick="step('max_len',-1)">-</div>
-                    <input id="max_len" value="5" style="width:30px; padding:0; text-align:center; background:none;" readonly>
+                    <input id="max_len" value="5" style="width:30px; text-align:center; background:none;" readonly>
                     <div class="step-btn" onclick="step('max_len',1)">+</div>
                 </div>
                 <button id="btn" onclick="run()" style="flex:2;">EXPLORE</button>
@@ -141,7 +126,7 @@
             <div id="copy_tools" style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 8px; align-items: center;">
                 <div class="step-container" style="flex: 1.2;">
                     <span style="font-size: 9px; font-weight: 900;">上位</span>
-                    <input id="copy_num" type="number" value="10" style="width: 35px; padding: 0; text-align: center; background: none;">
+                    <input id="copy_num" type="number" value="10" style="width: 35px; text-align: center; background: none;">
                     <div class="step-btn" onclick="step('copy_num',-5)" style="width:24px; height:24px;">-</div>
                     <div class="step-btn" onclick="step('copy_num',5)" style="width:24px; height:24px;">+</div>
                 </div>
@@ -175,7 +160,7 @@
                 document.getElementById('dict-list').innerHTML = words.map(w => {
                     const s = wordStates[w] || 'white';
                     const style = s==='red'?'background:#f43f5e;color:white;':s==='blue'?'background:#2563eb;color:white;':'';
-                    return `<button onclick="toggleWord('${w}')" style="${style} font-size:10px; padding:8px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">${w}</button>`;
+                    return `<button onclick="toggleWord('${w}')" style="${style} font-size:10px; padding:8px; border-radius:8px; border:1px solid var(--border);">${w}</button>`;
                 }).join('');
             } catch(e) {}
         }
@@ -194,12 +179,10 @@
                 categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value)
             };
             document.querySelectorAll('input, select').forEach(el => { if(el.id) body[el.id] = el.type==='checkbox'?el.checked:el.value; });
-            
             try {
                 const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
                 const d = await r.json();
-                currentRoutes = d.routes || [];
-                updateUI(d.count, d.score);
+                currentRoutes = d.routes || []; updateUI(d.count, d.score);
             } catch(e) { alert("探索エラー"); }
             btn.innerText = "EXPLORE"; btn.disabled = false;
         }
@@ -208,14 +191,24 @@
             document.getElementById('stat_count').innerText = count.toLocaleString();
             document.getElementById('stat_score').innerText = score.toLocaleString();
             let r20 = 1;
-            if (score > 2000000) r20 = 20;
-            else if (score > 1000000) r20 = 19;
-            else if (score > 500000) r20 = 16 + Math.floor((score - 500000) / 125000);
-            else r20 = Math.max(1, Math.ceil(score / 30000));
-            
+            if (score > 2000000) r20 = 19 + Math.min(1, Math.floor((score - 2000000) / 1000000));
+            else if (score > 500000) r20 = 16 + Math.floor((score - 500000) / 500000);
+            else if (score > 100000) r20 = 12 + Math.floor((score - 100000) / 100000);
+            else if (score > 20000)  r20 = 8 + Math.floor((score - 20000) / 20000);
+            else if (score > 5000)   r20 = 4 + Math.floor((score - 5000) / 3750);
+            else r20 = Math.max(1, Math.ceil(score / 1250));
+            r20 = Math.min(20, r20);
+
             const colors = { iron: "#1a1a1a", bronze: "#cd7f32", silver: "#c0c0c0", gold: "#ffd700", platinum: "#e5e4e2", diamond: "#b9f2ff" };
             let bg = r20<=3?colors.iron:r20<=7?colors.bronze:r20<=11?colors.silver:r20<=15?colors.gold:r20<=18?colors.platinum:colors.diamond;
-            document.getElementById('rank_display').innerHTML = `<span class="badge" style="background:${bg}; color:${r20<=7?'#fff':'#000'};">Rank ${r20}</span>`;
+            const r5 = ['E','D','C','B','A'][Math.min(4, Math.floor((r20-1)/4))];
+            const r10 = Math.ceil(r20/2);
+
+            document.getElementById('rank_display').innerHTML = `
+                <span class="badge" style="background:#2563eb;">5階級: ${r5}</span>
+                <span class="badge" style="background:#10b981;">10階級: ${r10}</span>
+                <span class="badge" style="background:${bg}; color:${r20<=7?'#fff':'#000'}; border:1px solid rgba(0,0,0,0.1);">Rank ${r20}</span>
+            `;
             document.getElementById('stats').classList.remove('hidden'); display();
         }
 
@@ -230,21 +223,21 @@
         }
 
         function copyBulk(type) {
-            if (currentRoutes.length === 0) return;
-            let targets = type === 'top' ? currentRoutes.slice(0, parseInt(document.getElementById('copy_num').value) || 10) : currentRoutes;
+            if (!currentRoutes.length) return;
+            let targets = type==='top' ? currentRoutes.slice(0, parseInt(document.getElementById('copy_num').value)||10) : currentRoutes;
             const nl = document.getElementById('copy_newline').checked;
             const withLen = document.getElementById('copy_with_len').checked;
             const text = targets.map((rt, i) => {
-                let line = `${i + 1}: ` + rt.join(nl ? '\n' : '→');
-                if (withLen) line += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
+                let line = `${i+1}: ` + rt.join(nl?'\n':'→');
+                if (withLen) line += (nl?'\n':' ') + `(${rt.join('').length}字)`;
                 return line;
             }).join('\n\n');
-            navigator.clipboard.writeText(text); alert(`${targets.length}件コピー完了`);
+            navigator.clipboard.writeText(text); alert(`${targets.length}件完了`);
         }
 
         function saveSettings() {
             const s = { wordStates: wordStates };
-            document.querySelectorAll('input, select').forEach(el => { if(el.id) s[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
+            document.querySelectorAll('input, select').forEach(el => { if(el.id) s[el.id] = el.type==='checkbox'?el.checked:el.value; });
             localStorage.setItem('ultra_settings_final_v12', JSON.stringify(s));
         }
 
@@ -254,8 +247,7 @@
             Object.keys(s).forEach(k => { const el = document.getElementById(k); if(el) { if(el.type==='checkbox') el.checked=s[k]; else el.value=s[k]; } });
             loadDictionaryUI();
         };
-
-        function allReset() { if(confirm("初期化しますか？")) { localStorage.clear(); location.reload(); } }
+        function allReset() { if(confirm("初期化？")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>

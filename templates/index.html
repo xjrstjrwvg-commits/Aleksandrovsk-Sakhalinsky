@@ -2,330 +2,288 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>極・ULTRA ENGINE Pro</title>
-    <!-- Tailwind CSSの静的読み込みを追加（iPhoneでの白画面対策） -->
-    <link href="https://cloudflare.com" rel="stylesheet">
-    <script src="https://tailwindcss.com"></script>
     <style>
-        html, body { overflow-x: hidden; position: relative; width: 100%; touch-action: pan-y; background-color: #f8fafc; }
-        .dark { color-scheme: dark; }
-        .dark body { background-color: #020617; }
-        .glass { @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl; }
-        input, select, textarea { @apply bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-sm outline-none focus:ring-1 ring-blue-500 font-bold; }
-        .step-btn { @apply bg-slate-200 dark:bg-slate-700 w-9 h-9 flex items-center justify-center rounded-lg font-black active:scale-90 transition-all text-sm; }
-        ::-webkit-scrollbar { display: none; }
-        .btn-white { background-color: white; color: #334155; border-color: #e2e8f0; }
-        .dark .btn-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
-        summary { list-style: none; cursor: pointer; }
-        summary::-webkit-details-marker { display: none; }
-        details input, details select, details textarea {
-            @apply border-2 border-slate-300 dark:border-slate-600 py-4 px-4 my-1;
-            background-color: rgba(255, 255, 255, 0.7);
-        }
-        .dark details input, .dark details select, .dark details textarea {
-            background-color: rgba(30, 41, 59, 0.7);
-        }
+        :root { --bg: #f8fafc; --text: #0f172a; --glass: #ffffff; --border: #e2e8f0; --accent: #2563eb; --input-bg: #f1f5f9; }
+        .dark { --bg: #020617; --text: #f1f5f9; --glass: #0f172a; --border: #1e293b; --accent: #3b82f6; --input-bg: #1e293b; }
+        
+        * { box-sizing: border-box; font-family: -apple-system, sans-serif; writing-mode: horizontal-tb !important; -webkit-writing-mode: horizontal-tb !important; }
+
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.2; overflow-x: hidden; }
+        .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+        .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+        .title { font-weight: 900; color: var(--accent); font-style: italic; text-transform: uppercase; font-size: 16px; }
+        
+        input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 4px; padding: 8px 0; }
+        label { display: flex !important; align-items: center !important; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+        input[type="checkbox"] { width: 18px !important; height: 18px !important; margin: 0 6px 0 0 !important; flex-shrink: 0; }
+
+        #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; margin-top: 5px; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+        
+        .step-container { display: flex; align-items: center; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 3px 6px; }
+        .step-btn { background-color: var(--border); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; color: var(--text); }
+        
+        .res-card { background: var(--glass); border-radius: 18px; padding: 15px; border: 1px solid var(--border); margin-bottom: 8px; }
+        .badge { font-size: 10px; font-weight: 900; padding: 5px 10px; border-radius: 8px; color: white; border: 1px solid rgba(0,0,0,0.1); }
+        
+        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 15px; overflow-y: auto; display: none; }
+        .sticky-close { position: sticky; top: 0; z-index: 10000; width: 100%; padding: 12px; font-weight: 900; cursor: pointer; border: none; background: #ef4444; color: white; border-radius: 10px; margin-bottom: 10px; }
+
+        summary { font-size: 10px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 5px; list-style: none; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
-    <div class="max-w-md mx-auto space-y-3">
-        <header class="flex justify-between items-center py-1">
-            <div class="flex items-center gap-3">
-                <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
-                <button onclick="toggleDarkMode()" class="text-xl p-1 hover:scale-110 transition-transform">🌗</button>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="resetSettings()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 px-4 py-2 rounded-full text-[10px] font-bold uppercase">Reset</button>
-                <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase">All Copy</button>
+<body onchange="saveSettings()">
+    <div class="max-w-md">
+        <header>
+            <span class="title">Ultra Engine Pro</span>
+            <div style="display:flex; gap:8px;">
+                <button onclick="allReset()" style="width:auto; padding:8px 12px; background:#ef4444; color:white; font-size:10px;">ALL RESET</button>
+                <button onclick="toggleDarkMode()" style="width:auto; padding:8px 12px;">🌗</button>
+                <button onclick="openDict()" style="width:auto; background:var(--accent); color:white;">📕</button>
             </div>
         </header>
 
-        <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
-            <input id="sw" placeholder="開始単語" class="w-full">
-            <div class="grid grid-cols-3 gap-2">
-                <input id="sc" placeholder="開始字" class="w-full">
-                <input id="mc" placeholder="必須文字" class="w-full">
-                <input id="ec" placeholder="終了字" class="w-full">
+        <div class="glass">
+            <div class="grid-2">
+                <input id="start_word" placeholder="開始単語" autocomplete="off">
+                <input id="must_char" placeholder="必須(あ、い、う)" autocomplete="off">
             </div>
-
-            <details class="group border border-slate-200 dark:border-slate-700 rounded-2xl p-2 bg-slate-50/50 dark:bg-slate-800/20">
-                <summary class="flex justify-center items-center py-3 cursor-pointer">
-                    <span class="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest group-open:hidden">＋ 詳細設定を表示</span>
-                    <span class="text-[11px] font-black text-rose-500 uppercase tracking-widest hidden group-open:block">－ 詳細設定を閉じる</span>
-                </summary>
-                
-                <div class="space-y-5 pt-2 pb-4 px-1">
-                    <div class="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-blue-500 uppercase ml-1">全語開始字</label>
-                            <input id="asc" placeholder="ア,カ" class="w-full">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-blue-500 uppercase ml-1">全語終了字</label>
-                            <input id="aec" placeholder="ン,イ" class="w-full">
-                        </div>
+            <div class="grid-2">
+                <input id="sc" placeholder="開始字" autocomplete="off">
+                <input id="ec" placeholder="終了字" autocomplete="off">
+            </div>
+            
+            <details id="details_menu">
+                <summary>＋ ADVANCED SETTINGS</summary>
+                <div style="padding-top:10px; display:flex; flex-direction:column; gap:10px;">
+                    <div class="grid-2">
+                        <input id="must_order" placeholder="正順(ア、イ、ウ)">
+                        <input id="edge_chars" placeholder="端点(さ、か)">
                     </div>
-
-                    <div class="space-y-1 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <label class="text-[10px] font-bold text-emerald-500 uppercase ml-1">使える文字チェックリスト</label>
-                        <input id="valid_chars" placeholder="アイウエオ (空欄で全許可)" class="w-full">
+                    <div class="grid-2">
+                        <div class="step-container">
+                            <span style="font-size:9px; opacity:0.6;">物理</span>
+                            <div class="step-btn" onclick="step('p_shift',-1)">-</div>
+                            <input id="p_shift" value="0" style="width:25px; padding:0; text-align:center; background:none;" readonly>
+                            <div class="step-btn" onclick="step('p_shift',1)">+</div>
+                        </div>
+                        <input id="exc" placeholder="全体除外文字">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-widest">グループ必須</label>
-                            <textarea id="gc" placeholder="アメリカ,イギリス:2" class="w-full h-20 resize-none text-[10px]"></textarea>
+                    <div class="grid-2">
+                        <div class="step-container">
+                            <span style="font-size:9px; opacity:0.6;">ずらし</span>
+                            <div class="step-btn" onclick="step('ks_abs',-1)">-</div>
+                            <input id="ks_abs" value="0" style="width:25px; padding:0; text-align:center; background:none;" readonly>
+                            <div class="step-btn" onclick="step('ks_abs',1)">+</div>
                         </div>
-                        <div class="space-y-1 text-orange-600">
-                            <label class="text-[10px] font-bold uppercase ml-1 tracking-widest">選択必須</label>
-                            <textarea id="cc" placeholder="ン,ン:2" class="w-full h-20 resize-none text-[10px]"></textarea>
-                        </div>
+                        <input id="target_total" type="number" placeholder="合計文字数指定">
                     </div>
-
-                    <div class="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">使用不可文字</label>
-                            <input id="exc" placeholder="ン,ガ" class="w-full">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-rose-400 uppercase ml-1">禁止開始文字</label>
-                            <input id="bsc" placeholder="ガ,ザ" class="w-full">
-                        </div>
+                    <div class="grid-2">
+                        <label>表示上限 <input id="limit_x" type="number" value="100"></label>
+                        <label>Ｔアウト <input id="timeout_val" type="number" value="15"></label>
                     </div>
-
-                    <div class="space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div class="flex justify-between items-center">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">50音ずらし</label>
-                            <input type="checkbox" id="use_shift" class="w-6 h-6 cursor-pointer accent-blue-600">
-                        </div>
-                        <div class="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 p-3 rounded-xl">
-                            <div class="flex gap-4 font-bold text-[11px]">
-                                <label class="cursor-pointer flex items-center gap-2"><input type="radio" name="shift_mode" value="abs" checked class="w-4 h-4"> ±</label>
-                                <label class="cursor-pointer flex items-center gap-2"><input type="radio" name="shift_mode" value="normal" class="w-4 h-4"> 通常</label>
-                            </div>
-                            <div class="flex items-center gap-3 ml-auto">
-                                <button type="button" onclick="adjustVal('ks_abs',-1)" class="step-btn">-</button>
-                                <input type="number" id="ks_abs" value="1" class="w-12 text-center bg-transparent border-none text-sm font-bold">
-                                <button type="button" onclick="adjustVal('ks_abs',1)" class="step-btn">+</button>
-                            </div>
-                        </div>
+                    <div class="grid-2">
+                        <select id="sort_mode">
+                            <option value="default">順:50音</option>
+                            <option value="len_asc">順:字数少</option>
+                            <option value="len_desc">順:字数多</option>
+                            <option value="random">順:ランダム</option>
+                        </select>
+                        <select id="len_mode"><option value="free">文字数:自由</option><option value="same">文字数:同長</option><option value="diff">文字数:異長</option></select>
+                        <select id="shift_mode"><option value="abs">選択式±</option><option value="normal">通常+</option></select>
                     </div>
-
-                    <div class="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ソート順</label>
-                            <select id="sort_mode" class="w-full text-[11px] font-bold">
-                                <option value="default">検索順</option>
-                                <option value="kana">50音順</option>
-                                <option value="len_asc">文字数少ない順</option>
-                                <option value="len_desc">文字数多い順</option>
-                                <option value="random">ランダム</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">適用範囲</label>
-                            <select id="unify_scope" class="w-full text-[11px] font-bold">
-                                <option value="all">すべて</option>
-                                <option value="conn">接続のみ</option>
-                                <option value="filter">制約のみ</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-x-4 gap-y-3 text-[11px] font-bold border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="allow_daku" class="w-4 h-4"> 濁点OK</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="allow_handaku" class="w-4 h-4"> 半濁点OK</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-indigo-600"><input type="checkbox" id="auto_recovery" class="w-4 h-4"> 遡り接続</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-orange-600"><input type="checkbox" id="unify_small" class="w-4 h-4"> 大=小</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-blue-600"><input type="checkbox" id="rt" class="w-4 h-4"> 牛耕</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-blue-600"><input type="checkbox" id="once" class="w-4 h-4"> 単一制約</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-rose-600"><input type="checkbox" id="char_limit_mode" class="w-4 h-4"> 重複禁止</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-rose-500"><input type="checkbox" id="exclude_conjugate" class="w-4 h-4"> 共役排除</label>
-                        <label class="flex items-center gap-2 cursor-pointer text-amber-600 font-black"><input type="checkbox" id="an_shiki_mode" class="w-4 h-4"> 餡式接続</label>
-                    </div>
-
-                    <div class="space-y-1 text-right border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-right block">物理ずらし / 文字計</label>
-                        <div class="flex justify-end gap-3">
-                            <input type="number" id="ps" value="0" class="w-14 text-center text-sm font-bold border-2">
-                            <input type="number" id="ttl" placeholder="計" class="w-16 text-center text-sm font-bold border-2">
-                        </div>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="early_stop" checked> 到達打切</label>
+                        <label><input type="checkbox" id="rt"> 牛耕反転</label>
+                        <label><input type="checkbox" id="exclude_conjugate"> 共役排除</label>
+                        <label><input type="checkbox" id="once_constraint"> 単一制約</label>
+                        <label><input type="checkbox" id="unify_small"> 大＝小</label>
+                        <label><input type="checkbox" id="allow_daku"> 濁点清音</label>
+                        <label><input type="checkbox" id="allow_handaku"> 半濁清音</label>
+                        <label><input type="checkbox" id="use_shift"> ずらし有効</label>
+                        <label><input type="checkbox" id="char_limit_mode"> 重複禁止</label>
+                        <label><input type="checkbox" id="copy_with_len"> 文字数付与</label>
+                        <label><input type="checkbox" id="copy_newline"> 改行コピー</label>
                     </div>
                 </div>
             </details>
 
-            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">文字数構成</label>
-                    <select id="len_mode" class="w-full text-[10px] font-bold">
-                        <option value="free">自由</option>
-                        <option value="same">すべて同じ</option>
-                        <option value="diff">すべてバラバラ</option>
-                    </select>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+                <div class="step-container" style="flex:1;">
+                    <span style="font-weight:900; font-size:11px;">単語数</span>
+                    <div class="step-btn" onclick="step('max_len',-1)">-</div>
+                    <input id="max_len" value="5" style="width:30px; padding:0; text-align:center; background:none;" readonly>
+                    <div class="step-btn" onclick="step('max_len',1)">+</div>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-right block">コピー制限数</label>
-                    <input type="number" id="copy_limit" value="10" class="w-full text-center text-xs py-2">
-                </div>
+                <button id="btn" onclick="run()" style="flex:2;">EXPLORE</button>
             </div>
+            <div style="display:flex; gap:12px; font-size:10px; margin-top:8px;">
+                <label><input type="checkbox" name="cat" value="country" checked onchange="loadDictionaryUI()"> 国</label>
+                <label><input type="checkbox" name="cat" value="capital" onchange="loadDictionaryUI()"> 首都</label>
+            </div>
+        </div>
 
-            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div class="space-y-1">
-                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">単語数</label>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="adjustVal('ml',-1)" class="step-btn">-</button>
-                        <input type="number" id="ml" value="5" class="w-10 text-center bg-transparent border-none text-sm font-bold">
-                        <button type="button" onclick="adjustVal('ml',1)" class="step-btn">+</button>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end pt-4">
-                    <div class="flex gap-2">
-                       <button onclick="copyTopN()" class="bg-blue-600/10 text-blue-600 px-4 py-3 rounded-2xl text-[10px] font-black uppercase">Top N</button>
-                       <button type="button" onclick="run()" id="btn" class="bg-blue-600 text-white font-black px-8 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">Explore</button>
-                    </div>
-                </div>
+        <div id="stats" class="hidden glass" style="text-align:center; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-around;">
+                <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ROUTES</div><div id="stat_count" style="font-size:24px; font-weight:900; color:var(--accent);">0</div></div>
+                <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ULTRA SCORE</div><div id="stat_score" style="font-size:24px; font-weight:900;">0</div></div>
             </div>
-
-            <div class="flex items-center justify-between pt-2">
-                <div class="flex gap-3 text-[11px] font-bold">
-                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="country" checked onchange="loadDictionaryUI()"> 国</label>
-                    <label class="cursor-pointer text-blue-500"><input type="checkbox" name="cat" value="capital" onchange="loadDictionaryUI()"> 首都</label>
-                </div>
-            </div>
+            <div id="rank_display" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;"></div>
             
-            <div id="stats" class="text-center text-[10px] font-bold text-blue-500 hidden uppercase py-1"></div>
+            <!-- コピーツール追加 -->
+            <div id="copy_tools" style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 8px; align-items: center;">
+                <div class="step-container" style="flex: 1.2;">
+                    <span style="font-size: 9px; font-weight: 900;">上位</span>
+                    <input id="copy_num" type="number" value="10" style="width: 35px; padding: 0; text-align: center; background: none;">
+                    <div class="step-btn" onclick="step('copy_num',-5)" style="width:24px; height:24px;">-</div>
+                    <div class="step-btn" onclick="step('copy_num',5)" style="width:24px; height:24px;">+</div>
+                </div>
+                <button onclick="copyBulk('top')" style="flex: 1; font-size: 10px; padding: 8px; background: var(--accent); color: white;">上位コピー</button>
+                <button onclick="copyBulk('all')" style="flex: 1; font-size: 10px; padding: 8px; background: #10b981; color: white;">全てコピー</button>
+            </div>
         </div>
-        <div id="res" class="space-y-3 pb-20"></div>
+
+        <div id="res"></div>
     </div>
 
-    <div id="dict-manager" class="hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-5 overflow-y-auto">
-        <button onclick="document.getElementById('dict-manager').classList.add('hidden')" class="mb-5 font-bold text-rose-500">CLOSE</button>
-        <div class="grid grid-cols-2 gap-2 mb-5">
-            <button onclick="bulkSet('white')" class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl font-bold">全開放</button>
-            <button onclick="bulkSet('red')" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 p-3 rounded-xl font-bold">全禁止</button>
+    <div id="dict-manager">
+        <button onclick="closeDict()" class="sticky-close">CLOSE DICTIONARY</button>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
+            <button onclick="bulkDictSet('red')" style="background:#f43f5e; color:white; font-size:10px; padding:12px 5px;">ALL 除外</button>
+            <button onclick="bulkDictSet('white')" style="background:#e2e8f0; color:#0f172a; font-size:10px; padding:12px 5px;">ALL リセット</button>
+            <button onclick="bulkDictSet('blue')" style="background:#2563eb; color:white; font-size:10px; padding:12px 5px;">ALL 必須</button>
         </div>
-        <div id="dict-list" class="grid grid-cols-2 gap-1"></div>
+        <div id="dict-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;"></div>
     </div>
-    <button onclick="document.getElementById('dict-manager').classList.remove('hidden')" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest opacity-80 hover:opacity-100">Dictionary</button>
 
     <script>
-        let currentRoutes = [];
-        let wordStates = {};
+        let currentRoutes = []; let wordStates = {};
 
-        function to_katakana(text) { return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60)); }
         function toggleDarkMode() { document.documentElement.classList.toggle('dark'); saveSettings(); }
-        function getWordStyle(state) {
-            if (state === 'red') return "background-color: #f43f5e; color: white; border-color: #e11d48;";
-            if (state === 'blue') return "background-color: #2563eb; color: white; border-color: #1d4ed8;";
-            return ""; 
-        }
-
-        async function init() {
-            if (localStorage.ultraSettings) {
-                try {
-                    const s = JSON.parse(localStorage.ultraSettings);
-                    const fields = ['sw','sc','asc','mc','ec','aec','exc','bsc','ml','ps','ks_abs','ttl','gc','cc','sort_mode','unify_scope','copy_limit','valid_chars','len_mode'];
-                    fields.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                    const checks = ['allow_daku','allow_handaku','char_limit_mode','auto_recovery','unify_small','rt','once','use_shift','exclude_conjugate','an_shiki_mode'];
-                    checks.forEach(f => { if(s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
-                    if (s.dark_mode) document.documentElement.classList.add('dark');
-                    if (s.wordStates) wordStates = s.wordStates;
-                } catch(e) {}
-            }
-            await loadDictionaryUI();
-        }
+        function step(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value) + delta); saveSettings(); }
+        function openDict() { document.getElementById('dict-manager').style.display = 'block'; loadDictionaryUI(); }
+        function closeDict() { document.getElementById('dict-manager').style.display = 'none'; }
 
         async function loadDictionaryUI() {
             try {
-                const r = await fetch('/get_dictionary');
-                const dict = await r.json();
+                const r = await fetch('/get_dictionary'); const dict = await r.json();
                 const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-                let words = [];
-                cats.forEach(c => words = words.concat(dict[c] || []));
+                let words = []; cats.forEach(c => words = words.concat(dict[c] || []));
                 words = Array.from(new Set(words)).sort();
                 document.getElementById('dict-list').innerHTML = words.map(w => {
                     const s = wordStates[w] || 'white';
-                    return `<button onclick="toggleWordState(this, '${w}')" class="p-2 rounded-lg border text-[10px] font-bold ${s==='white'?'btn-white':''}" style="${getWordStyle(s)}">${w}</button>`;
+                    const style = s==='red'?'background:#f43f5e;color:white;':s==='blue'?'background:#2563eb;color:white;':'';
+                    return `<button onclick="toggleWord('${w}')" style="${style} font-size:10px; padding:8px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">${w}</button>`;
                 }).join('');
             } catch(e) {}
         }
 
-        function toggleWordState(btn, word) {
-            const states = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
-            wordStates[word] = states[wordStates[word] || 'white'];
-            saveSettings();
-            loadDictionaryUI(); 
+        function toggleWord(w) {
+            const s = wordStates[w] || 'white';
+            wordStates[w] = s==='white'?'red':s==='red'?'blue':'white';
+            loadDictionaryUI(); saveSettings();
         }
 
-        function bulkSet(state) {
+        async function bulkDictSet(state) {
+            if(!confirm(state==='white'?"全てリセットしますか？":"表示中を全て変更しますか？")) return;
+            const r = await fetch('/get_dictionary'); const dict = await r.json();
             const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            fetch('/get_dictionary').then(r => r.json()).then(dict => {
-                cats.forEach(c => {
-                    (dict[c] || []).forEach(w => { wordStates[w] = state; });
-                });
-                saveSettings();
-                loadDictionaryUI();
-            });
+            cats.forEach(c => { (dict[c]||[]).forEach(w => { if(state==='white') delete wordStates[w]; else wordStates[w]=state; }); });
+            saveSettings(); loadDictionaryUI();
         }
 
-        function saveSettings() {
-            const sm = document.querySelector('input[name="shift_mode"]:checked');
-            localStorage.ultraSettings = JSON.stringify({
-                sw: document.getElementById('sw').value, sc: document.getElementById('sc').value, asc: document.getElementById('asc').value,
-                mc: document.getElementById('mc').value, ec: document.getElementById('ec').value, aec: document.getElementById('aec').value,
-                exc: document.getElementById('exc').value, bsc: document.getElementById('bsc').value,
-                ml: document.getElementById('ml').value, ps: document.getElementById('ps').value, ks_abs: document.getElementById('ks_abs').value,
-                ttl: document.getElementById('ttl').value, valid_chars: document.getElementById('valid_chars').value,
-                len_mode: document.getElementById('len_mode').value, use_shift: document.getElementById('use_shift').checked,
-                exclude_conjugate: document.getElementById('exclude_conjugate').checked, an_shiki_mode: document.getElementById('an_shiki_mode').checked,
-                dark_mode: document.documentElement.classList.contains('dark'), wordStates: wordStates, shift_mode: sm ? sm.value : 'abs'
-            });
+        function allReset() {
+            if(confirm("全ての入力設定、および辞書の除外・必須設定を完全に初期化しますか？")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
-
-        function resetSettings() { localStorage.removeItem('ultraSettings'); location.reload(); }
-        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value || 0) + delta); saveSettings(); }
 
         async function run() {
-            const btn = document.getElementById('btn'); btn.innerText = "EXPLORING..."; btn.disabled = true;
+            const btn = document.getElementById('btn'); btn.innerText = "WAIT..."; btn.disabled = true;
             const body = {
-                start_word: document.getElementById('sw').value, start_char: document.getElementById('sc').value,
-                all_start_char: document.getElementById('asc').value, must_char: document.getElementById('mc').value,
-                end_char: document.getElementById('ec').value, all_end_char: document.getElementById('aec').value,
-                exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
-                valid_chars: document.getElementById('valid_chars').value, len_mode: document.getElementById('len_mode').value,
-                max_len: document.getElementById('ml').value, pos_shift: parseInt(document.getElementById('ps').value || 0),
-                use_shift: document.getElementById('use_shift').checked, ks_abs: parseInt(document.getElementById('ks_abs').value),
-                shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
-                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
-                unify_small: document.getElementById('unify_small').checked, round_trip: document.getElementById('rt').checked,
-                exclude_conjugate: document.getElementById('exclude_conjugate').checked, an_shiki_mode: document.getElementById('an_shiki_mode').checked,
-                categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
-                red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
+                red_words: Object.keys(wordStates).filter(k => wordStates[k]==='red'),
+                blue_words: Object.keys(wordStates).filter(k => wordStates[k]==='blue'),
+                categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value)
             };
+            document.querySelectorAll('input, select').forEach(el => { if(el.id) body[el.id] = el.type==='checkbox'?el.checked:el.value; });
+            
             try {
                 const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-                const d = await r.json(); currentRoutes = d.routes || []; btn.innerText = "Explore"; btn.disabled = false; display();
-            } catch(e) { btn.innerText = "Explore"; btn.disabled = false; }
+                const d = await r.json();
+                currentRoutes = d.routes || [];
+                updateUI(d.count, d.score);
+            } catch(e) { alert("探索エラー"); }
+            btn.innerText = "EXPLORE"; btn.disabled = false;
+        }
+
+        function updateUI(count, score) {
+            document.getElementById('stat_count').innerText = count.toLocaleString();
+            document.getElementById('stat_score').innerText = score.toLocaleString();
+            
+            let r20 = 1;
+            if (score > 2000000) r20 = 19 + Math.min(1, Math.floor((score - 2000000) / 1000000));
+            else if (score > 500000) r20 = 16 + Math.floor((score - 500000) / 500000);
+            else if (score > 100000) r20 = 12 + Math.floor((score - 100000) / 100000);
+            else if (score > 20000)  r20 = 8 + Math.floor((score - 20000) / 20000);
+            else if (score > 5000)   r20 = 4 + Math.floor((score - 5000) / 3750);
+            else r20 = Math.max(1, Math.ceil(score / 1250));
+            r20 = Math.min(20, r20);
+
+            const colors = { iron: "#1a1a1a", bronze: "#cd7f32", silver: "#c0c0c0", gold: "#ffd700", platinum: "#e5e4e2", diamond: "#b9f2ff" };
+            let bg = r20<=3?colors.iron:r20<=7?colors.bronze:r20<=11?colors.silver:r20<=15?colors.gold:r20<=18?colors.platinum:colors.diamond;
+            document.getElementById('rank_display').innerHTML = `
+                <span class="badge" style="background:#2563eb;">5階級: ${['E','D','C','B','A'][Math.min(4, Math.floor(r20/4))]}</span>
+                <span class="badge" style="background:#10b981;">10階級: ${Math.ceil(r20/2)}</span>
+                <span class="badge" style="background:${bg}; color:${r20<=7?'#fff':'#000'}; border:1px solid rgba(0,0,0,0.1);">Rank ${r20}</span>
+            `;
+            document.getElementById('stats').classList.remove('hidden'); display();
         }
 
         function display() {
-            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `
-                <div class="glass p-4 rounded-[20px] flex flex-col gap-2">
-                    <div class="flex justify-between items-center text-[10px] font-black text-slate-400"><span>#${i+1}</span><button onclick="copyOne(${i})" class="text-blue-600">Copy</button></div>
-                    <div class="font-bold text-sm">${rt.join(' → ')}</div>
-                    <div class="text-[9px] font-black uppercase text-blue-500">${rt.join('').length} letters</div>
-                </div>`).join('');
-            document.getElementById('stats').innerText = `${currentRoutes.length} ROUTES FOUND`;
-            document.getElementById('stats').classList.remove('hidden');
+            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `<div class="res-card"><div style="display:flex; justify-content:space-between; font-size:10px; color:gray; margin-bottom:5px;">#${i+1} (${rt.join('').length}字) <button onclick="copyOne(${i}, this)" style="width:auto; padding:2px 8px;">COPY</button></div><div style="font-weight:800; font-size:14px; word-break:break-all;">${rt.join('→')}</div></div>`).join('');
         }
 
-        function copyOne(i) { navigator.clipboard.writeText(currentRoutes[i].join(' → ')); }
-        function copyAll() { navigator.clipboard.writeText(currentRoutes.map(rt => rt.join(' → ')).join('\n')); }
-        function copyTopN() { const n = parseInt(document.getElementById('copy_limit').value); navigator.clipboard.writeText(currentRoutes.slice(0, n).map(rt => rt.join(' → ')).join('\n')); }
+        function copyOne(i, btn) {
+            const rt = currentRoutes[i]; const nl = document.getElementById('copy_newline').checked;
+            let text = rt.join(nl ? '\n' : '→'); if(document.getElementById('copy_with_len').checked) text += (nl?'\n':'') + `(${rt.join('').length}字)`;
+            navigator.clipboard.writeText(text); btn.innerText = "OK!"; setTimeout(()=>btn.innerText="COPY", 800);
+        }
 
-        window.onload = init;
+        function copyBulk(type) {
+            if (currentRoutes.length === 0) return;
+            let targets = type === 'top' ? currentRoutes.slice(0, parseInt(document.getElementById('copy_num').value) || 10) : currentRoutes;
+            const nl = document.getElementById('copy_newline').checked;
+            const withLen = document.getElementById('copy_with_len').checked;
+            const text = targets.map((rt, i) => {
+                let line = `${i + 1}: ` + rt.join(nl ? '\n' : '→');
+                if (withLen) line += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
+                return line;
+            }).join('\n\n');
+            navigator.clipboard.writeText(text);
+            alert(`${targets.length}件コピーしました`);
+        }
+
+        function saveSettings() {
+            const s = { wordStates: wordStates };
+            document.querySelectorAll('input, select').forEach(el => { if(el.id) s[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
+            localStorage.setItem('ultra_settings_final_v12', JSON.stringify(s));
+        }
+
+        window.onload = () => {
+            const s = JSON.parse(localStorage.getItem('ultra_settings_final_v12') || "{}");
+            wordStates = s.wordStates || {};
+            Object.keys(s).forEach(k => { const el = document.getElementById(k); if(el) { if(el.type==='checkbox') el.checked=s[k]; else el.value=s[k]; } });
+            loadDictionaryUI();
+        };
     </script>
 </body>
 </html>

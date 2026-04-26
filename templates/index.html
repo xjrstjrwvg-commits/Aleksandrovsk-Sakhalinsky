@@ -8,18 +8,26 @@
         :root { --bg: #f8fafc; --text: #0f172a; --glass: #ffffff; --border: #e2e8f0; --accent: #2563eb; --input-bg: #f1f5f9; }
         .dark { --bg: #020617; --text: #f1f5f9; --glass: #0f172a; --border: #1e293b; --accent: #3b82f6; --input-bg: #1e293b; }
         
-        * { box-sizing: border-box; font-family: -apple-system, sans-serif; writing-mode: horizontal-tb !important; -webkit-writing-mode: horizontal-tb !important; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.2; overflow-x: hidden; min-height: 100vh; }
-        .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.3; overflow-x: hidden; min-height: 100vh; }
+        .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
         .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
-        header { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
-        .title { font-weight: 900; color: var(--accent); font-style: italic; text-transform: uppercase; font-size: 16px; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+        .title { font-weight: 900; color: var(--accent); font-style: italic; text-transform: uppercase; font-size: 18px; letter-spacing: -0.5px; }
         
         input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; -webkit-appearance: none; }
         
-        /* チェックボックス視覚強化 */
+        /* 物理・ずらし等の操作パネル（重なり防止） */
+        .step-container { display: flex; align-items: center; justify-content: space-between; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 5px 10px; min-width: 130px; border: 1px solid transparent; }
+        .step-container:focus-within { border-color: var(--accent); }
+        .step-container span { font-size: 10px; font-weight: 900; opacity: 0.6; white-space: nowrap; }
+        .step-container input { width: 45px !important; padding: 0 !important; text-align: center !important; background: none !important; font-size: 15px; border: none !important; }
+        .step-btn { width: 30px; height: 30px; background-color: var(--border); display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; user-select: none; }
+        .step-btn:active { transform: scale(0.9); }
+
+        /* チェックボックスの視覚強化 */
         input[type="checkbox"] { 
             -webkit-appearance: none; appearance: none;
             width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; 
@@ -27,43 +35,50 @@
             cursor: pointer; position: relative; transition: 0.2s; flex-shrink: 0;
         }
         input[type="checkbox"]:checked { background-color: var(--accent) !important; border-color: var(--accent) !important; }
-        input[type="checkbox"]:checked::after { content: "✔"; position: absolute; color: white; font-size: 14px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        input[type="checkbox"]:checked::after { 
+            content: "✔"; position: absolute; color: white; font-size: 14px; 
+            left: 50%; top: 50%; transform: translate(-50%, -50%); 
+        }
         label:has(input:checked) { color: var(--accent); font-weight: 900; }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 4px; padding: 8px 0; }
-        label { display: flex !important; align-items: center !important; font-size: 11px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 5px; padding: 10px 0; }
+        label { display: flex !important; align-items: center !important; font-size: 11px; font-weight: 900; cursor: pointer; }
 
-        #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; margin-top: 5px; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
-        .step-container { display: flex; align-items: center; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 3px 6px; }
-        .step-btn { background-color: var(--border); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; color: var(--text); }
+        #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; padding: 15px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        #btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        .res-card { background: var(--glass); border-radius: 18px; padding: 15px; border: 1px solid var(--border); margin-bottom: 8px; }
-        .badge { font-size: 10px; font-weight: 900; padding: 5px 10px; border-radius: 8px; color: white; border: 1px solid rgba(0,0,0,0.1); }
+        /* 検索結果・牛耕式表示 */
+        .res-card { background: var(--glass); border-radius: 18px; padding: 18px; border: 1px solid var(--border); margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .ln-norm { text-align: left; font-weight: 700; }
+        .ln-rev { text-align: right; color: var(--accent); font-weight: 900; }
         
-        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 15px; overflow-y: auto; display: none; }
-        .sticky-close { position: sticky; top: 0; z-index: 10000; width: 100%; padding: 12px; font-weight: 900; cursor: pointer; border: none; background: #ef4444; color: white; border-radius: 10px; margin-bottom: 10px; }
-        summary { font-size: 10px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 5px; list-style: none; }
+        .badge { font-size: 10px; font-weight: 900; padding: 6px 12px; border-radius: 8px; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 0; display: none; overflow-y: auto; }
+        .dict-header { position: sticky; top: 0; background: #ef4444; color: white; padding: 15px; text-align: center; font-weight: 900; cursor: pointer; z-index: 10; }
+        
+        summary { font-size: 11px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 8px; list-style: none; border-top: 1px solid var(--border); }
         .hidden { display: none !important; }
     </style>
 </head>
 <body onchange="saveSettings()">
+
     <div class="max-w-md">
         <header>
             <span class="title">Ultra Engine Pro</span>
             <div style="display:flex; gap:8px;">
                 <button onclick="allReset()" style="width:auto; padding:8px 12px; background:#ef4444; color:white; font-size:10px;">ALL RESET</button>
-                <button onclick="toggleDarkMode()" style="width:auto; padding:8px 12px;">🌗</button>
-                <button onclick="openDict()" style="width:auto; background:var(--accent); color:white;">📕</button>
+                <button onclick="openDict()" style="width:auto; background:var(--accent); color:white; padding:8px 15px;">📕</button>
             </div>
         </header>
 
         <div class="glass">
-            <div class="grid-2">
+            <div class="grid-2" style="margin-bottom:10px;">
                 <input id="start_word" placeholder="開始単語" autocomplete="off">
                 <input id="must_char" placeholder="必須(あ、い、う)" autocomplete="off">
             </div>
-            <div class="grid-2">
+            <div class="grid-2" style="margin-bottom:10px;">
                 <input id="sc" placeholder="開始字" autocomplete="off">
                 <input id="ec" placeholder="終了字" autocomplete="off">
             </div>
@@ -71,186 +86,273 @@
             <details id="details_menu">
                 <summary>＋ ADVANCED SETTINGS</summary>
                 <div style="padding-top:10px; display:flex; flex-direction:column; gap:10px;">
-                    <div class="grid-2"><input id="must_order" placeholder="正順(ア、イ、ウ)"><input id="edge_chars" placeholder="端点(さ、か)"></div>
                     <div class="grid-2">
-                        <div class="step-container"><span style="font-size:9px; opacity:0.6;">物理</span><div class="step-btn" onclick="step('p_shift',-1)">-</div><input id="p_shift" value="0" style="width:25px; text-align:center; background:none;" readonly><div class="step-btn" onclick="step('p_shift',1)">+</div></div>
+                        <input id="must_order" placeholder="出現順序(正順)">
                         <input id="exc" placeholder="全体除外文字">
                     </div>
                     <div class="grid-2">
-                        <div class="step-container"><span style="font-size:9px; opacity:0.6;">ずらし</span><div class="step-btn" onclick="step('ks_abs',-1)">-</div><input id="ks_abs" value="0" style="width:25px; text-align:center; background:none;" readonly><div class="step-btn" onclick="step('ks_abs',1)">+</div></div>
+                        <div class="step-container">
+                            <span>物理</span>
+                            <div class="step-btn" onclick="step('p_shift',-1)">-</div>
+                            <input id="p_shift" value="0" readonly>
+                            <div class="step-btn" onclick="step('p_shift',1)">+</div>
+                        </div>
+                        <div class="step-container">
+                            <span>ずらし</span>
+                            <div class="step-btn" onclick="step('ks_abs',-1)">-</div>
+                            <input id="ks_abs" value="0" readonly>
+                            <div class="step-btn" onclick="step('ks_abs',1)">+</div>
+                        </div>
+                    </div>
+                    <div class="grid-2">
                         <input id="target_total" type="number" placeholder="合計文字数指定">
-                    </div>
-                    <div class="grid-2">
-                        <label>表示上限 <input id="limit_x" type="number" value="100"></label>
-                        <label>Ｔアウト <input id="timeout_val" type="number" value="15"></label>
-                    </div>
-                    <div class="grid-2">
-                        <select id="sort_mode"><option value="default">順:50音</option><option value="len_asc">少字数</option><option value="len_desc">多字数</option><option value="random">ランダム</option></select>
-                        <select id="len_mode"><option value="free">自由長</option><option value="same">同長</option><option value="diff">異長</option></select>
-                        <select id="shift_mode"><option value="abs">選択±</option><option value="normal">通常+</option></select>
+                        <select id="sort_mode">
+                            <option value="default">50音順</option>
+                            <option value="len_asc">少字数順</option>
+                            <option value="len_desc">多字数順</option>
+                            <option value="random">ランダム</option>
+                        </select>
                     </div>
                     <div class="checkbox-group">
+                        <label><input type="checkbox" id="rt" checked> 牛耕式</label>
+                        <label><input type="checkbox" id="exclude_conjugate" checked> 共役排除</label>
+                        <label><input type="checkbox" id="char_limit_mode" checked> 重複禁止</label>
+                        <label><input type="checkbox" id="use_shift" checked> ずらし有効</label>
+                        <label><input type="checkbox" id="copy_newline" checked> 改行コピー</label>
+                        <label><input type="checkbox" id="copy_with_len" checked> 文字数付与</label>
+                        <label><input type="checkbox" id="copy_with_index" checked> 番号付与</label>
                         <label><input type="checkbox" id="early_stop" checked> 到達打切</label>
-                        <label><input type="checkbox" id="rt"> 牛耕反転</label>
-                        <label><input type="checkbox" id="exclude_conjugate"> 共役排除</label>
                         <label><input type="checkbox" id="once_constraint"> 単一制約</label>
-                        <label><input type="checkbox" id="unify_small"> 大＝小</label>
-                        <label><input type="checkbox" id="allow_daku"> 濁点清音</label>
-                        <label><input type="checkbox" id="allow_handaku"> 半濁清音</label>
-                        <label><input type="checkbox" id="use_shift"> ずらし有効</label>
-                        <label><input type="checkbox" id="char_limit_mode"> 重複禁止</label>
-                        <label><input type="checkbox" id="copy_with_len"> 文字数付与</label>
-                        <label><input type="checkbox" id="copy_newline"> 改行コピー</label>
                     </div>
                 </div>
             </details>
 
             <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
                 <div class="step-container" style="flex:1;">
-                    <span style="font-weight:900; font-size:11px;">連鎖</span>
+                    <span style="font-weight:900;">連鎖</span>
                     <div class="step-btn" onclick="step('max_len',-1)">-</div>
-                    <input id="max_len" value="5" style="width:30px; text-align:center; background:none;" readonly>
+                    <input id="max_len" value="5" readonly>
                     <div class="step-btn" onclick="step('max_len',1)">+</div>
                 </div>
-                <button id="btn" onclick="run()" style="flex:2;">EXPLORE</button>
-            </div>
-            <div style="display:flex; gap:12px; font-size:10px; margin-top:8px;">
-                <label><input type="checkbox" name="cat" value="country" checked onchange="loadDictionaryUI()"> 国</label>
-                <label><input type="checkbox" name="cat" value="capital" onchange="loadDictionaryUI()"> 首都</label>
+                <button id="btn" onclick="run()" style="flex:1.5;">EXPLORE</button>
             </div>
         </div>
 
-        <div id="stats" class="hidden glass" style="text-align:center; display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; justify-content:space-around;">
+        <!-- 統計・コピーエリア -->
+        <div id="stats" class="hidden glass" style="text-align:center;">
+            <div style="display:flex; justify-content:space-around; margin-bottom:12px;">
                 <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ROUTES</div><div id="stat_count" style="font-size:24px; font-weight:900; color:var(--accent);">0</div></div>
                 <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ULTRA SCORE</div><div id="stat_score" style="font-size:24px; font-weight:900;">0</div></div>
             </div>
-            <div id="rank_display" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;"></div>
-            <div id="copy_tools" style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 8px; align-items: center;">
-                <div class="step-container" style="flex: 1.2;">
-                    <span style="font-size: 9px; font-weight: 900;">上位</span>
-                    <input id="copy_num" type="number" value="10" style="width: 35px; text-align: center; background: none;">
+            <div id="rank_display" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:15px;"></div>
+            
+            <div style="border-top:1px solid var(--border); padding-top:12px; display:flex; gap:8px; align-items:center;">
+                <div class="step-container" style="flex:1.2;">
+                    <span>上位</span>
+                    <input id="copy_num" type="number" value="10">
                     <div class="step-btn" onclick="step('copy_num',-5)" style="width:24px; height:24px;">-</div>
                     <div class="step-btn" onclick="step('copy_num',5)" style="width:24px; height:24px;">+</div>
                 </div>
-                <button onclick="copyBulk('top')" style="flex: 1; font-size: 10px; padding: 8px; background: var(--accent); color: white;">上位コピー</button>
-                <button onclick="copyBulk('all')" style="flex: 1; font-size: 10px; padding: 8px; background: #10b981; color: white;">全てコピー</button>
+                <button onclick="copyBulk('top')" style="flex:1; font-size:11px; background:var(--accent); color:white;">上位コピー</button>
+                <button onclick="copyBulk('all')" style="flex:1; font-size:11px; background:#10b981; color:white;">全てコピー</button>
             </div>
         </div>
 
+        <!-- 結果表示 -->
         <div id="res"></div>
     </div>
 
+    <!-- 辞書マネージャー -->
     <div id="dict-manager">
-        <button onclick="closeDict()" class="sticky-close">CLOSE DICTIONARY</button>
-        <div id="dict-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;"></div>
+        <div class="dict-header" onclick="closeDict()">CLOSE DICTIONARY (TAP HERE)</div>
+        <div id="dict-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; padding:15px;"></div>
     </div>
 
     <script>
-        let currentRoutes = []; let wordStates = {};
+        let currentRoutes = [];
+        let wordStates = {};
 
-        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); saveSettings(); }
-        function step(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value) + delta); saveSettings(); }
-        function openDict() { document.getElementById('dict-manager').style.display = 'block'; loadDictionaryUI(); }
-        function closeDict() { document.getElementById('dict-manager').style.display = 'none'; }
+        function step(id, d) {
+            const e = document.getElementById(id);
+            e.value = parseInt(e.value) + d;
+            saveSettings();
+        }
+
+        function openDict() {
+            document.getElementById('dict-manager').style.display = 'block';
+            loadDictionaryUI();
+        }
+
+        function closeDict() {
+            document.getElementById('dict-manager').style.display = 'none';
+        }
 
         async function loadDictionaryUI() {
             try {
-                const r = await fetch('/get_dictionary'); const dict = await r.json();
-                const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-                let words = []; cats.forEach(c => words = words.concat(dict[c] || []));
-                words = Array.from(new Set(words)).sort();
+                const r = await fetch('/get_dictionary');
+                const d = await r.json();
+                const words = [...(d.country || []), ...(d.capital || [])].sort();
                 document.getElementById('dict-list').innerHTML = words.map(w => {
                     const s = wordStates[w] || 'white';
-                    const style = s==='red'?'background:#f43f5e;color:white;':s==='blue'?'background:#2563eb;color:white;':'';
-                    return `<button onclick="toggleWord('${w}')" style="${style} font-size:10px; padding:8px; border-radius:8px; border:1px solid var(--border);">${w}</button>`;
+                    const bg = s === 'red' ? '#f43f5e' : s === 'blue' ? '#2563eb' : 'var(--input-bg)';
+                    const co = s === 'white' ? 'var(--text)' : 'white';
+                    return `<button onclick="toggleWord('${w}')" style="background:${bg}; color:${co}; font-size:11px; padding:10px; border-radius:8px; border:1px solid var(--border);">${w}</button>`;
                 }).join('');
-            } catch(e) {}
+            } catch (e) {}
         }
 
         function toggleWord(w) {
             const s = wordStates[w] || 'white';
-            wordStates[w] = s==='white'?'red':s==='red'?'blue':'white';
-            loadDictionaryUI(); saveSettings();
+            wordStates[w] = s === 'white' ? 'red' : s === 'red' ? 'blue' : 'white';
+            loadDictionaryUI();
+            saveSettings();
         }
 
         async function run() {
-            const btn = document.getElementById('btn'); btn.innerText = "WAIT..."; btn.disabled = true;
+            const btn = document.getElementById('btn');
+            btn.innerText = "EXPLORING...";
+            btn.disabled = true;
+
             const body = {
-                red_words: Object.keys(wordStates).filter(k => wordStates[k]==='red'),
-                blue_words: Object.keys(wordStates).filter(k => wordStates[k]==='blue'),
-                categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value)
+                red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'),
+                blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue'),
+                categories: ["country", "capital"]
             };
-            document.querySelectorAll('input, select').forEach(el => { if(el.id) body[el.id] = el.type==='checkbox'?el.checked:el.value; });
+
+            document.querySelectorAll('input, select').forEach(el => {
+                if (el.id) body[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+            });
+
             try {
-                const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+                const r = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
                 const d = await r.json();
-                currentRoutes = d.routes || []; updateUI(d.count, d.score);
-            } catch(e) { alert("探索エラー"); }
-            btn.innerText = "EXPLORE"; btn.disabled = false;
+                currentRoutes = d.routes || [];
+                updateUI(d.count, d.score);
+            } catch (e) {
+                alert("探索中にエラーが発生しました。");
+            }
+            btn.innerText = "EXPLORE";
+            btn.disabled = false;
         }
 
         function updateUI(count, score) {
             document.getElementById('stat_count').innerText = count.toLocaleString();
             document.getElementById('stat_score').innerText = score.toLocaleString();
+            
+            // 20段階ランク計算
             let r20 = 1;
-            if (score > 2000000) r20 = 19 + Math.min(1, Math.floor((score - 2000000) / 1000000));
-            else if (score > 500000) r20 = 16 + Math.floor((score - 500000) / 500000);
-            else if (score > 100000) r20 = 12 + Math.floor((score - 100000) / 100000);
-            else if (score > 20000)  r20 = 8 + Math.floor((score - 20000) / 20000);
-            else if (score > 5000)   r20 = 4 + Math.floor((score - 5000) / 3750);
-            else r20 = Math.max(1, Math.ceil(score / 1250));
+            if (score > 1000000) r20 = 18 + Math.min(2, Math.floor(score/1000000));
+            else if (score > 500000) r20 = 15 + Math.floor((score-500000)/150000);
+            else if (score > 100000) r20 = 10 + Math.floor((score-100000)/80000);
+            else r20 = Math.max(1, Math.ceil(score/10000));
             r20 = Math.min(20, r20);
 
-            const colors = { iron: "#1a1a1a", bronze: "#cd7f32", silver: "#c0c0c0", gold: "#ffd700", platinum: "#e5e4e2", diamond: "#b9f2ff" };
-            let bg = r20<=3?colors.iron:r20<=7?colors.bronze:r20<=11?colors.silver:r20<=15?colors.gold:r20<=18?colors.platinum:colors.diamond;
+            const colors = { iron: "#4b5563", bronze: "#92400e", silver: "#94a3b8", gold: "#eab308", platinum: "#2dd4bf", diamond: "#3b82f6" };
+            let bg = r20 <= 3 ? colors.iron : r20 <= 7 ? colors.bronze : r20 <= 11 ? colors.silver : r20 <= 15 ? colors.gold : r20 <= 18 ? colors.platinum : colors.diamond;
+            
             const r5 = ['E','D','C','B','A'][Math.min(4, Math.floor((r20-1)/4))];
             const r10 = Math.ceil(r20/2);
 
             document.getElementById('rank_display').innerHTML = `
                 <span class="badge" style="background:#2563eb;">5階級: ${r5}</span>
                 <span class="badge" style="background:#10b981;">10階級: ${r10}</span>
-                <span class="badge" style="background:${bg}; color:${r20<=7?'#fff':'#000'}; border:1px solid rgba(0,0,0,0.1);">Rank ${r20}</span>
+                <span class="badge" style="background:${bg}; color:white;">Rank ${r20}</span>
             `;
-            document.getElementById('stats').classList.remove('hidden'); display();
+            
+            document.getElementById('stats').classList.remove('hidden');
+            display();
         }
 
         function display() {
-            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `<div class="res-card"><div style="display:flex; justify-content:space-between; font-size:10px; color:gray; margin-bottom:5px;">#${i+1} (${rt.join('').length}字) <button onclick="copyOne(${i}, this)" style="width:auto; padding:2px 8px;">COPY</button></div><div style="font-weight:800; font-size:14px; word-break:break-all;">${rt.join('→')}</div></div>`).join('');
+            const isRt = document.getElementById('rt').checked;
+            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => {
+                const lines = rt.map((w, idx) => {
+                    const rev = isRt && idx % 2 !== 0;
+                    // 牛耕式表示：偶数行は反転文字＋右寄せ＋左矢印
+                    return `<div class="${rev ? 'ln-rev' : 'ln-norm'}">
+                        ${rev ? w.split('').reverse().join('') + ' ◀' : (idx > 0 ? '▶ ' : '') + w}
+                    </div>`;
+                });
+                return `
+                    <div class="res-card">
+                        <div style="display:flex; justify-content:space-between; font-size:10px; opacity:0.5; margin-bottom:8px;">
+                            <span>#${i+1} (${rt.join('').length}字)</span>
+                            <button onclick="copyOne(${i}, this)" style="width:auto; padding:2px 8px; font-size:9px;">COPY</button>
+                        </div>
+                        ${lines.join('')}
+                    </div>`;
+            }).join('');
         }
 
         function copyOne(i, btn) {
-            const rt = currentRoutes[i]; const nl = document.getElementById('copy_newline').checked;
-            let text = rt.join(nl ? '\n' : '→'); if(document.getElementById('copy_with_len').checked) text += (nl?'\n':'') + `(${rt.join('').length}字)`;
-            navigator.clipboard.writeText(text); btn.innerText = "OK!"; setTimeout(()=>btn.innerText="COPY", 800);
+            const rt = currentRoutes[i];
+            const nl = document.getElementById('copy_newline').checked;
+            const isRt = document.getElementById('rt').checked;
+            
+            let displayRt = rt.map((w, idx) => (isRt && idx % 2 !== 0) ? w.split('').reverse().join('') : w);
+            let text = displayRt.join(nl ? '\n' : ' → ');
+            
+            if(document.getElementById('copy_with_len').checked) {
+                text += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
+            }
+            
+            navigator.clipboard.writeText(text);
+            const oldText = btn.innerText;
+            btn.innerText = "OK!";
+            setTimeout(() => btn.innerText = oldText, 800);
         }
 
         function copyBulk(type) {
             if (!currentRoutes.length) return;
-            let targets = type==='top' ? currentRoutes.slice(0, parseInt(document.getElementById('copy_num').value)||10) : currentRoutes;
+            const num = type === 'top' ? parseInt(document.getElementById('copy_num').value) || 10 : currentRoutes.length;
+            const targets = currentRoutes.slice(0, num);
+            
             const nl = document.getElementById('copy_newline').checked;
             const withLen = document.getElementById('copy_with_len').checked;
+            const withIdx = document.getElementById('copy_with_index').checked;
+            const isRt = document.getElementById('rt').checked;
+
             const text = targets.map((rt, i) => {
-                let line = `${i+1}: ` + rt.join(nl?'\n':'→');
-                if (withLen) line += (nl?'\n':' ') + `(${rt.join('').length}字)`;
+                let displayRt = rt.map((w, idx) => (isRt && idx % 2 !== 0) ? w.split('').reverse().join('') : w);
+                let line = (withIdx ? `${i+1}: ` : "") + displayRt.join(nl ? '\n' : ' → ');
+                if (withLen) line += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
                 return line;
             }).join('\n\n');
-            navigator.clipboard.writeText(text); alert(`${targets.length}件完了`);
+
+            navigator.clipboard.writeText(text);
+            alert(`${targets.length}件のルートをコピーしました。`);
         }
 
         function saveSettings() {
-            const s = { wordStates: wordStates };
-            document.querySelectorAll('input, select').forEach(el => { if(el.id) s[el.id] = el.type==='checkbox'?el.checked:el.value; });
-            localStorage.setItem('ultra_settings_final_v12', JSON.stringify(s));
+            const s = { wordStates };
+            document.querySelectorAll('input, select').forEach(el => {
+                if (el.id) s[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+            });
+            localStorage.setItem('ultra_pro_final_config', JSON.stringify(s));
         }
 
         window.onload = () => {
-            const s = JSON.parse(localStorage.getItem('ultra_settings_final_v12') || "{}");
+            const s = JSON.parse(localStorage.getItem('ultra_pro_final_config') || "{}");
             wordStates = s.wordStates || {};
-            Object.keys(s).forEach(k => { const el = document.getElementById(k); if(el) { if(el.type==='checkbox') el.checked=s[k]; else el.value=s[k]; } });
-            loadDictionaryUI();
+            Object.keys(s).forEach(k => {
+                const el = document.getElementById(k);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = s[k];
+                    else el.value = s[k];
+                }
+            });
         };
-        function allReset() { if(confirm("初期化？")) { localStorage.clear(); location.reload(); } }
+
+        function allReset() {
+            if(confirm("全ての履歴と設定を初期化しますか？")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
     </script>
 </body>
 </html>

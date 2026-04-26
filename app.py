@@ -1,45 +1,69 @@
 import os, time, sys, re, math, random
 from flask import Flask, render_template, request, jsonify
-from collections import Counter, defaultdict
+from collections import defaultdict
 
-# 辞書データのインポート
 try:
     from dictionary import DICTIONARY_MASTER
 except ImportError:
-    DICTIONARY_MASTER = {"country": ["ニホン", "イタリア", "アメリカ", "ドイツ"], "capital": ["トウキョウ", "ローマ"]}
+    DICTIONARY_MASTER = {
+        "country": ["ニホン", "イタリア", "アメリカ", "ドイツ", "オーストラリア", "オーストリア", "ブラジル"],
+        "capital": ["トウキョウ", "ローマ", "ベルリン"]
+    }
 
 sys.setrecursionlimit(20000)
 app = Flask(__name__)
 
-# --- 正規化用マッピング ---
-SMALL_TO_LARGE = {"ァ": "ア", "ィ": "イ", "ゥ": "ウ", "ェ": "エ", "ォ": "オ", "ッ": "ツ", "ャ": "ヤ", "ュ": "ユ", "ョ": "ヨ", "ヮ": "ワ"}
-DAKU_MAP = {"ガ":"カ", "ギ":"キ", "グ":"ク", "ゲ":"ケ", "ゴ":"コ", "ザ":"サ", "ジ":"シ", "ズ":"ス", "ゼ":"セ", "ゾ":"ソ", "ダ":"タ", "ヂ":"チ", "ヅ":"ツ", "デ":"テ", "ド":"ト", "バ":"ハ", "ビ":"ヒ", "ブ":"フ", "ベ":"ヘ", "ボ":"ホ"}
-HANDAKU_MAP = {"パ":"ハ", "ピ":"ヒ", "プ":"フ", "ペ":"ヘ", "ポ":"ホ"}
+# --- ずらししりとり基本順番表 (全75文字) ---
+KANA_ORDER = (
+    "アイウエオ"
+    "カキクケコ"
+    "ガギグゲゴ"
+    "サシスセソ"
+    "ザジズゼゾ"
+    "タチツテト"
+    "ダヂヅデド"
+    "ナニヌネノ"
+    "ハヒフヘホ"
+    "バビブベボ"
+    "パピプペポ"
+    "マミムメモ"
+    "ヤユヨ"
+    "ラリルレロ"
+    "ワン"
+)
+
+# 小文字から大文字への変換マップ
+SMALL_TO_LARGE = {
+    "ァ": "ア", "ィ": "イ", "ゥ": "ウ", "ェ": "エ", "ォ": "オ",
+    "ッ": "ツ", "ャ": "ヤ", "ュ": "ユ", "ョ": "ヨ", "ヮ": "ワ",
+    "ヵ": "カ", "ヶ": "ケ"
+}
 
 def to_kana(text):
     if not text: return ""
-    return "".join([chr(ord(c) + 96) if 0x3041 <= ord(c) <= 0x3096 else c for c in str(text)])
+    # ひらがなをカタカナに、長音「ー」を除去
+    return "".join([chr(ord(c) + 96) if 0x3041 <= ord(c) <= 0x3096 else c for c in str(text)]).replace("ー", "")
 
-def get_base_char(c, unify_s=False, unify_d=False, unify_h=False):
-    res = c
-    if unify_s: res = SMALL_TO_LARGE.get(res, res)
-    if unify_d: res = DAKU_MAP.get(res, res)
-    if unify_h: res = HANDAKU_MAP.get(res, res)
-    return res
+def get_base_char(c):
+    # 小文字を大文字に正規化
+    return SMALL_TO_LARGE.get(c, c)
 
-def get_clean_char(w, pos="tail", offset=0, unify_s=False, unify_d=False, unify_h=False):
-    text = to_kana(w).replace("ー", "")
-    if not text or len(text) <= offset: return None
+def get_clean_char(w, pos="tail", offset=0):
+    text = to_kana(w)
+    if not text or len(text) <= abs(offset): return None
     try:
+        # 物理オフセット適用 (headなら前から、tailなら後ろから)
         idx = offset if pos == "head" else -(1 + offset)
-        return get_base_char(text[idx], unify_s, unify_d, unify_h)
+        return get_base_char(text[idx])
     except IndexError: return None
 
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    return render_template('index.html')
 
 @app.route('/get_dictionary')
-def get_dict(): return jsonify(DICTIONARY_MASTER)
+def get_dict():
+    return jsonify(DICTIONARY_MASTER)
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -50,117 +74,93 @@ def search():
         p_shift = int(d.get('p_shift', 0))
         limit_x = int(d.get('limit_x', 100))
         timeout_val = int(d.get('timeout_val', 15))
-        u_small = d.get('unify_small', False)
-        u_daku = d.get('allow_daku', False)
-        u_handaku = d.get('allow_handaku', False)
         early_stop = d.get('early_stop', True)
+        char_limit_mode = d.get('char_limit_mode', True)
         
-        def split_input(key):
-            raw = d.get(key, "")
-            return [to_kana(x.strip()) for x in re.split('[、,]', raw) if x.strip()]
-
-        mc_raw_list = split_input('must_char')
-        sc_req = to_kana(d.get('sc', ""))
-        ec_req = to_kana(d.get('ec', ""))
-        exc_chars = set([get_base_char(c, u_small, u_daku, u_handaku) for c in split_input('exc')])
-
-        all_cats = d.get('categories', ["country"])
-        red_words = set(d.get('red_words', []))
-        blue_words = set(d.get('blue_words', []))
-        word_pool = []
-        all_pool_count = 0
-        
+        # 1. 辞書構築とフィルタリング
+        all_cats = d.get('categories', ["country", "capital"])
+        raw_pool = []
         for cat in all_cats:
-            pool = DICTIONARY_MASTER.get(cat, [])
-            all_pool_count += len(pool)
-            for w in pool:
-                if w in red_words: continue
-                w_norm = "".join([get_base_char(c, u_small, u_daku, u_handaku) for c in to_kana(w)])
-                if exc_chars and not set(w_norm).isdisjoint(exc_chars): continue
-                if d.get('exclude_conjugate') and get_clean_char(w, "head", 0, u_small, u_daku, u_handaku) == get_clean_char(w, "tail", 0, u_small, u_daku, u_handaku): continue
-                word_pool.append(w)
+            raw_pool.extend(DICTIONARY_MASTER.get(cat, []))
+        raw_pool = list(set(raw_pool))
+
+        red_words = set(d.get('red_words', []))
         
-        word_pool = sorted(list(set(word_pool)))
+        # 【共役排除ルール】
+        # 開始字・終了字のペアが共通する単語が存在する場合、そのペアに属する単語をすべて除外
+        if d.get('exclude_conjugate'):
+            edge_map = defaultdict(list)
+            for w in raw_pool:
+                h = get_clean_char(w, "head", 0)
+                t = get_clean_char(w, "tail", 0)
+                if h and t:
+                    edge_map[(h, t)].append(w)
+            for key, words in edge_map.items():
+                if len(words) > 1:
+                    red_words.update(words)
+
+        word_pool = [w for w in raw_pool if w not in red_words]
+        
+        # インデックス構築 (開始文字 -> [単語リスト])
         head_idx = defaultdict(list)
         for w in word_pool:
-            h = get_clean_char(w, "head", 0, u_small, u_daku, u_handaku)
+            h = get_clean_char(w, "head", 0)
             if h: head_idx[h].append(w)
 
         results = []
         start_time = time.time()
 
-        def solve(path, current_len):
+        # 2. 探索エンジン (再帰)
+        def solve(path, used_chars):
+            # タイムアウトと最大件数チェック
             if time.time() - start_time > timeout_val: return
             if early_stop and len(results) >= limit_x: return
+
+            # 目標連鎖数に到達
             if len(path) == max_len:
-                full_norm = "".join([get_base_char(c, u_small, u_daku, u_handaku) for c in "".join([to_kana(w) for w in path])])
-                if ec_req and get_clean_char(path[-1], "tail", 0, u_small, u_daku, u_handaku) != get_base_char(ec_req, u_small, u_daku, u_handaku): return
-                if blue_words and not blue_words.issubset(set(path)): return
-                if d.get('target_total') and current_len != int(d.get('target_total')): return
-                for m in mc_raw_list:
-                    char_part, target = (m.split(':') + ["1"])[:2]
-                    target = int(target) if target.isdigit() else 1
-                    search_char = get_base_char(to_kana(char_part), u_small, u_daku, u_handaku)
-                    actual = full_norm.count(search_char)
-                    if d.get('once_constraint'):
-                        if actual != target: return
-                    else:
-                        if actual < target: return
-                mo_list = split_input('must_order')
-                if mo_list:
-                    curr = 0
-                    for c in mo_list:
-                        curr = full_norm.find(get_base_char(c, u_small, u_daku, u_handaku), curr)
-                        if curr == -1: return
-                        curr += 1
-                ec_list = split_input('edge_chars')
-                if ec_list:
-                    edges = {get_clean_char(w,"head",0,u_small,u_daku,u_handaku) for w in path} | {get_clean_char(w,"tail",0,u_small,u_daku,u_handaku) for w in path}
-                    if not set([get_base_char(c, u_small, u_daku, u_handaku) for c in ec_list]).issubset(edges): return
                 results.append(list(path))
                 return
-            src = get_clean_char(path[-1], "tail", p_shift, u_small, u_daku, u_handaku)
-            if not src: return
-            targets = {src}
-            KANA_LIST = "アイウエオカキクケコガギグゲゴサシスセソザジズゼゾタチツテトダヂヅデドナニヌネノハヒフヘホバビブベボパピプペポマミムメモヤユヨラリルレロワン"
-            if d.get('use_shift') and src in KANA_LIST:
-                idx = KANA_LIST.index(src)
-                if d.get('shift_mode') == 'abs': targets = {KANA_LIST[(idx+ks_abs)%len(KANA_LIST)], KANA_LIST[(idx-ks_abs)%len(KANA_LIST)]}
-                else: targets = {KANA_LIST[(idx+ks_abs)%len(KANA_LIST)]}
-            for t in targets:
-                for nxt in head_idx.get(t, []):
-                    if nxt in path: continue
-                    if d.get('len_mode') == 'same' and len(nxt) != len(path): continue
-                    if d.get('len_mode') == 'diff' and len(nxt) in [len(x) for x in path]: continue
-                    if d.get('char_limit_mode') and not set("".join([to_kana(x) for x in path])).isdisjoint(set(to_kana(nxt))): continue
-                    solve(path + [nxt], current_len + len(nxt))
 
+            # 前の単語の末尾から、次の開始文字を計算 (物理/ずらし適用)
+            last_word = path[-1]
+            tail_char = get_clean_char(last_word, "tail", p_shift)
+            
+            if not tail_char: return
+            
+            # ずらししりとりルール適用
+            if tail_char in KANA_ORDER:
+                curr_idx = KANA_ORDER.index(tail_char)
+                # 全75文字でループ計算 (「ン」の次は「ア」)
+                target_idx = (curr_idx + ks_abs) % len(KANA_ORDER)
+                next_start = KANA_ORDER[target_idx]
+            else:
+                next_start = tail_char
+
+            # 次の単語候補を探索
+            for nxt in head_idx.get(next_start, []):
+                # 単語重複禁止
+                if nxt in path: continue
+                
+                nxt_kana = to_kana(nxt)
+                # 【重複禁止ルール】一文字でも既出文字があれば除外
+                if char_limit_mode:
+                    if not set(nxt_kana).isdisjoint(used_chars):
+                        continue
+                
+                solve(path + [nxt], used_chars | set(nxt_kana))
+
+        # 開始
         sw = to_kana(d.get('start_word', ""))
         starts = [sw] if sw in word_pool else word_pool
+        
         for w in starts:
-            if sc_req and get_clean_char(w, "head", 0, u_small, u_daku, u_handaku) != get_base_char(sc_req, u_small, u_daku, u_handaku): continue
-            if early_stop and len(results) >= limit_x: break
-            solve([w], len(w))
+            # 初期単語の全文字をused_charsに入れて開始
+            solve([w], set(to_kana(w)))
 
-        sort_mode = d.get('sort_mode', 'default')
-        if sort_mode == 'len_asc': results.sort(key=lambda x: (len("".join(x)), x))
-        elif sort_mode == 'len_desc': results.sort(key=lambda x: (len("".join(x)), x), reverse=True)
-        elif sort_mode == 'random': random.shuffle(results)
-        else: results.sort()
+        return jsonify({"routes": results, "count": len(results)})
 
-        sol_c = len(results)
-        Co, So, P = max_len**2, round(10/math.sqrt(sol_c+1), 2), 1+(p_shift*0.5)
-        Sh = 1+(math.sqrt(ks_abs)*(2 if d.get('shift_mode')=='abs' else 1)) if d.get('use_shift') else 1
-        Ch, L = (5 if d.get('char_limit_mode') else 1), (3 if d.get('len_mode')=='same' else 1.5 if d.get('len_mode')=='diff' else 1)
-        Cw, Ex = (1.3 if d.get('rt') else 1), (1.5 if d.get('exclude_conjugate') else 1)
-        n_sum = sum([int(m.split(':')[-1]) if ':' in m and m.split(':')[-1].isdigit() else 1 for m in mc_raw_list])
-        Mc, On = 1.2**n_sum, (1+0.2*n_sum if d.get('once_constraint') else 1)
-        Bl, Ed = 1.3**len(split_input('must_order')), 1.2**len(split_input('edge_chars'))
-        Re, Ar = all_pool_count/(len(word_pool)+1), (0.7 if d.get('auto_recovery') else 1)
-        Wi = (n_sum-max_len)**2 if (n_sum-max_len)**2 >=1 else 1
-        score = int(round(Co*So*P*Sh*Ch*L*Cw*Ex*Mc*On*Bl*Re*Ar*Wi*Ed, 0))
-        return jsonify({"routes": results, "count": sol_c, "score": score})
-    except Exception as e: return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))

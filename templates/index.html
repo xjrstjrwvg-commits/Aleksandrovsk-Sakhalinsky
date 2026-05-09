@@ -2,321 +2,234 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>極・ULTRA ENGINE Pro</title>
     <style>
         :root { --bg: #f8fafc; --text: #0f172a; --glass: #ffffff; --border: #e2e8f0; --accent: #2563eb; --input-bg: #f1f5f9; }
         .dark { --bg: #020617; --text: #f1f5f9; --glass: #0f172a; --border: #1e293b; --accent: #3b82f6; --input-bg: #1e293b; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 8px; -webkit-text-size-adjust: 100%; }
+        .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+        .title { font-style: italic; color: var(--accent); font-weight: 900; font-size: 16px; text-transform: uppercase; white-space: nowrap; }
+        .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; }
         
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        input, select, textarea, span, button { white-space: nowrap; }
 
-        body { background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; line-height: 1.3; overflow-x: hidden; min-height: 100vh; transition: background 0.3s; }
-        .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
-        .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        
-        header { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
-        .title { font-weight: 900; color: var(--accent); font-style: italic; text-transform: uppercase; font-size: 18px; letter-spacing: -0.5px; }
-        
-        input, select, button { background-color: var(--input-bg); border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; color: var(--text); width: 100%; outline: none; transition: 0.2s; -webkit-appearance: none; }
-        
-        /* 操作パネルの重なり防止 */
-        .step-container { display: flex; align-items: center; justify-content: space-between; gap: 5px; background: var(--input-bg); border-radius: 12px; padding: 5px 10px; min-width: 130px; }
-        .step-container span { font-size: 10px; font-weight: 900; opacity: 0.6; white-space: nowrap; }
-        .step-container input { width: 45px !important; padding: 0 !important; text-align: center !important; background: none !important; font-size: 15px; font-weight: 900; }
-        .step-btn { width: 30px; height: 30px; background-color: var(--border); display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-weight: 900; }
+        input, select, textarea { background-color: var(--input-bg); border: 1px solid transparent; border-radius: 10px; padding: 8px; font-size: 13px; font-weight: bold; color: var(--text); width: 100%; box-sizing: border-box; outline: none; }
+        .grid { display: grid; gap: 5px; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        #btn { background-color: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 900; font-size: 14px; cursor: pointer; min-width: 80px; }
+        .step-btn { background-color: var(--border); border: none; border-radius: 6px; width: 30px; height: 30px; font-weight: 900; color: var(--text); cursor: pointer; flex-shrink: 0; }
 
-        /* チェックボックスの視覚強化 */
-        input[type="checkbox"] { 
-            -webkit-appearance: none; appearance: none;
-            width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; 
-            background-color: var(--input-bg); border: 2px solid var(--border); border-radius: 6px;
-            cursor: pointer; position: relative; transition: 0.2s; flex-shrink: 0;
+        summary { list-style: none; cursor: pointer; font-size: 10px; font-weight: 900; text-align: center; color: var(--accent); padding: 5px; }
+        .res-card { background-color: var(--glass); border-radius: 14px; padding: 10px; margin-bottom: 6px; border: 1px solid var(--border); }
+        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 15px; overflow-y: auto; display: none; }
+        .sticky-close { position: sticky; top: 0; z-index: 10000; width: 100%; padding: 12px; font-weight: 900; cursor: pointer; margin-bottom: 10px; border: none; background: var(--bg); border-bottom: 1px solid var(--border); color: #ef4444; }
+        .badge { font-size: 9px; font-weight: 900; border-radius: 15px; padding: 3px 8px; border: none; cursor: pointer; }
+        .hidden { display: none; }
+
+        /* 重なり防止の重要修正箇所 */
+        label { 
+            display: flex !important; 
+            align-items: center !important; 
+            gap: 6px !important; /* 文字とチェックボックスの間の余白 */
+            font-size: 10px; 
+            font-weight: 900; 
+            white-space: nowrap; 
+            cursor: pointer;
+            padding: 2px 0;
         }
-        input[type="checkbox"]:checked { background-color: var(--accent) !important; border-color: var(--accent) !important; }
-        input[type="checkbox"]:checked::after { 
-            content: "✔"; position: absolute; color: white; font-size: 14px; 
-            left: 50%; top: 50%; transform: translate(-50%, -50%); 
+        input[type="checkbox"], input[type="radio"] { 
+            width: 16px !important; 
+            height: 16px !important; 
+            margin: 0 !important; 
+            flex-shrink: 0 !important; /* チェックボックスが潰れないように */
         }
-        label:has(input:checked) { color: var(--accent); font-weight: 900; }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 5px; padding: 10px 0; }
-        label { display: flex !important; align-items: center !important; font-size: 11px; font-weight: 900; cursor: pointer; }
-
-        #btn { background: var(--accent); color: white; font-weight: 900; font-size: 16px; cursor: pointer; padding: 15px; }
-        
-        /* 検索結果・牛耕式表示 */
-        .res-card { background: var(--glass); border-radius: 18px; padding: 18px; border: 1px solid var(--border); margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
-        .ln-norm { text-align: left; font-weight: 700; }
-        .ln-rev { text-align: right; color: var(--accent); font-weight: 900; }
-        
-        .badge { font-size: 10px; font-weight: 900; padding: 6px 12px; border-radius: 8px; color: white; }
-        
-        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: none; overflow-y: auto; }
-        .sticky-close { position: sticky; top: 0; background: #ef4444; color: white; padding: 15px; text-align: center; font-weight: 900; cursor: pointer; z-index: 100; }
-        
-        summary { font-size: 11px; font-weight: 900; text-align: center; cursor: pointer; color: var(--accent); padding: 8px; list-style: none; border-top: 1px solid var(--border); }
-        .hidden { display: none !important; }
     </style>
 </head>
-<body onchange="saveSettings()">
-
+<body onchange="saveSettings()" oninput="saveSettings()">
     <div class="max-w-md">
         <header>
-            <span class="title">Ultra Engine Pro</span>
-            <div style="display:flex; gap:8px;">
-                <button onclick="allReset()" style="width:auto; padding:8px 12px; background:#ef4444; color:white; font-size:10px;">ALL RESET</button>
-                <button onclick="openDict()" style="width:auto; background:var(--accent); color:white; padding:8px 15px;">📕</button>
+            <div class="title">Ultra Engine Pro</div>
+            <div style="display: flex; gap: 4px;">
+                <button onclick="toggleDarkMode()" style="background: none; border: none; font-size: 16px;">🌗</button>
+                <button onclick="resetSettings()" class="badge" style="background: #fee2e2; color: #ef4444;">RESET</button>
+                <button onclick="copyAll(this)" class="badge" style="background: var(--border); color: var(--text);">ALL</button>
             </div>
         </header>
 
         <div class="glass">
-            <div class="grid-2" style="margin-bottom:10px;">
-                <input id="start_word" placeholder="開始単語" autocomplete="off">
-                <input id="must_char" placeholder="必須文字" autocomplete="off">
-            </div>
-            <div class="grid-2" style="margin-bottom:10px;">
-                <input id="sc" placeholder="開始字" autocomplete="off">
-                <input id="ec" placeholder="終了字" autocomplete="off">
-            </div>
-            
+            <div class="grid grid-2"><input id="sw" placeholder="開始単語"><input id="mc" placeholder="必須(あ:2)"></div>
+            <div class="grid grid-3"><input id="sc" placeholder="開始字"><input id="ec" placeholder="終了字"><select id="len_mode"><option value="free">自由</option><option value="same">同長</option><option value="diff">異長</option></select></div>
+
             <details id="details_menu">
-                <summary>＋ ADVANCED SETTINGS</summary>
-                <div style="padding-top:10px; display:flex; flex-direction:column; gap:10px;">
-                    <div class="grid-2">
-                        <input id="must_order" placeholder="出現順序(正順)">
-                        <input id="exc" placeholder="全体除外文字">
-                    </div>
-                    <div class="grid-2">
-                        <div class="step-container">
-                            <span>物理</span>
-                            <div class="step-btn" onclick="step('p_shift',-1)">-</div>
-                            <input id="p_shift" value="0" readonly>
-                            <div class="step-btn" onclick="step('p_shift',1)">+</div>
+                <summary>＋ MORE SETTINGS</summary>
+                <div style="padding-top: 8px; display: flex; flex-direction: column; gap: 10px;">
+                    <div class="grid grid-2"><input id="asc" placeholder="全語開始"><input id="aec" placeholder="全語終了"></div>
+                    <div class="grid grid-2"><textarea id="gc" placeholder="グループ必須" style="height: 40px; font-size: 10px; white-space: normal;"></textarea><textarea id="cc" placeholder="選択必須" style="height: 40px; font-size: 10px; white-space: normal;"></textarea></div>
+                    <div class="grid grid-2"><input id="exc" placeholder="不可文字"><input id="bsc" placeholder="禁止開始"></div>
+                    
+                    <div style="border-top: 1px solid var(--border); padding-top: 8px;">
+                        <label><input type="checkbox" id="use_shift"> 50音ずらし</label>
+                        <div style="display: flex; align-items: center; gap: 8px; background: var(--input-bg); padding: 8px; border-radius: 10px; margin-top: 5px;">
+                            <div style="display: flex; gap: 8px;">
+                                <label><input type="radio" name="shift_mode" value="abs" checked> ±</label>
+                                <label><input type="radio" name="shift_mode" value="normal"> 通常</label>
+                            </div>
+                            <div style="margin-left: auto; display: flex; align-items: center; gap: 5px;">
+                                <button type="button" onclick="adjustVal('ks_abs',-1)" class="step-btn">-</button>
+                                <input id="ks_abs" value="1" style="width:30px; text-align: center; border: none; background: none; font-weight: 900;">
+                                <button type="button" onclick="adjustVal('ks_abs',1)" class="step-btn">+</button>
+                            </div>
                         </div>
-                        <div class="step-container">
-                            <span>ずらし</span>
-                            <div class="step-btn" onclick="step('ks_abs',-1)">-</div>
-                            <input id="ks_abs" value="0" readonly>
-                            <div class="step-btn" onclick="step('ks_abs',1)">+</div>
-                        </div>
                     </div>
-                    <div class="grid-2">
-                        <input id="target_total" type="number" placeholder="合計文字数指定">
-                        <select id="sort_mode">
-                            <option value="default">50音順</option>
-                            <option value="len_asc">少字数順</option>
-                            <option value="len_desc">多字数順</option>
-                            <option value="random">ランダム</option>
-                        </select>
-                    </div>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" id="rt" checked> 牛耕式</label>
-                        <label><input type="checkbox" id="exclude_conjugate" checked> 共役排除</label>
-                        <label><input type="checkbox" id="char_limit_mode" checked> 重複禁止</label>
-                        <label><input type="checkbox" id="use_shift" checked> ずらし有効</label>
-                        <label><input type="checkbox" id="copy_newline" checked> 改行コピー</label>
-                        <label><input type="checkbox" id="copy_with_len" checked> 文字数付与</label>
-                        <label><input type="checkbox" id="copy_with_index" checked> 番号付与</label>
-                        <label><input type="checkbox" id="early_stop" checked> 到達打切</label>
+
+                    <!-- スイッチ群の重なりを解消 -->
+                    <div class="grid grid-2" style="gap: 6px; border-top: 1px solid var(--border); padding-top: 8px;">
+                        <label><input type="checkbox" id="allow_daku"> 濁点</label>
+                        <label><input type="checkbox" id="allow_handaku"> 半濁</label>
+                        <label style="color: #6366f1;"><input type="checkbox" id="auto_recovery"> 遡り</label>
+                        <label style="color: #2563eb;"><input type="checkbox" id="rt"> 牛耕</label>
+                        <label style="color: #2563eb;"><input type="checkbox" id="once"> 単一</label>
+                        <label style="color: #e11d48;"><input type="checkbox" id="char_limit_mode"> 重複禁</label>
+                        <label style="color: #f43f5e;"><input type="checkbox" id="exclude_conjugate"> 共役排除</label>
+                        <label style="color: #f97316;"><input type="checkbox" id="unify_small"> 大=小</label>
                     </div>
                 </div>
             </details>
 
-            <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
-                <div class="step-container" style="flex:1;">
-                    <span style="font-weight:900;">連鎖</span>
-                    <div class="step-btn" onclick="step('max_len',-1)">-</div>
-                    <input id="max_len" value="5" readonly>
-                    <div class="step-btn" onclick="step('max_len',1)">+</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 8px;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 10px; font-weight: 900;">単語数</span>
+                    <button type="button" onclick="adjustVal('ml',-1)" class="step-btn">-</button>
+                    <input id="ml" value="5" style="width:25px; text-align:center; background:none; border:none; font-weight:900;">
+                    <button type="button" onclick="adjustVal('ml',1)" class="step-btn">+</button>
                 </div>
-                <button id="btn" onclick="run()" style="flex:1.5;">EXPLORE</button>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <button onclick="copyTopN(this)" style="background: rgba(37,99,235,0.1); color: #2563eb; border: none; padding: 8px 12px; border-radius: 10px; font-size: 10px; font-weight: 900;">TOP</button>
+                    <button id="btn" onclick="run()">EXPLORE</button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                <div style="display: flex; gap: 12px;">
+                    <label><input type="checkbox" name="cat" value="country" checked onchange="loadDictionaryUI()"> 国</label>
+                    <label><input type="checkbox" name="cat" value="capital" onchange="loadDictionaryUI()"> 首都</label>
+                </div>
+                <div id="stats" style="font-weight: 900; color: #3b82f6; text-align: right;" class="hidden"></div>
             </div>
         </div>
-
-        <!-- 統計エリア -->
-        <div id="stats" class="hidden glass" style="text-align:center;">
-            <div style="display:flex; justify-content:space-around; margin-bottom:12px;">
-                <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ROUTES</div><div id="stat_count" style="font-size:24px; font-weight:900; color:var(--accent);">0</div></div>
-                <div><div style="font-size:10px; opacity:0.5; font-weight:900;">ULTRA SCORE</div><div id="stat_score" style="font-size:24px; font-weight:900;">0</div></div>
-            </div>
-            <div id="rank_display" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:15px;"></div>
-            
-            <div style="border-top:1px solid var(--border); padding-top:12px; display:flex; gap:8px; align-items:center;">
-                <div class="step-container" style="flex:1.2;">
-                    <span>上位</span>
-                    <input id="copy_num" type="number" value="10">
-                    <div class="step-btn" onclick="step('copy_num',-5)" style="width:24px; height:24px;">-</div>
-                    <div class="step-btn" onclick="step('copy_num',5)" style="width:24px; height:24px;">+</div>
-                </div>
-                <button onclick="copyBulk('top')" style="flex:1; font-size:11px; background:var(--accent); color:white;">上位コピー</button>
-                <button onclick="copyBulk('all')" style="flex:1; font-size:11px; background:#10b981; color:white;">全てコピー</button>
-            </div>
-        </div>
-
         <div id="res"></div>
     </div>
 
-    <!-- 辞書マネージャー -->
     <div id="dict-manager">
-        <div class="sticky-close" onclick="closeDict()">CLOSE DICTIONARY (TAP HERE)</div>
-        <div id="dict-list" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; padding:15px;"></div>
+        <button onclick="closeDict()" class="sticky-close">CLOSE</button>
+        <div class="grid grid-2" style="margin-bottom: 10px;">
+            <button onclick="bulkSet('white')" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 12px; font-weight: 900;">全開</button>
+            <button onclick="bulkSet('red')" style="padding: 10px; border-radius: 10px; border: 1px solid #fee2e2; color: #ef4444; font-size: 12px; font-weight: 900;">全禁</button>
+        </div>
+        <div id="dict-list" class="grid grid-2"></div>
     </div>
+    <button onclick="openDict()" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; border: none; padding: 10px 24px; border-radius: 25px; font-size: 11px; font-weight: 900; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 50; white-space: nowrap;">DICTIONARY</button>
 
     <script>
-        let currentRoutes = [];
-        let wordStates = {};
-
-        function step(id, d) {
-            const e = document.getElementById(id);
-            e.value = parseInt(e.value) + d;
-            saveSettings();
+        let currentRoutes = []; let wordStates = {};
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); saveSettings(); }
+        function openDict() { document.getElementById('dict-manager').style.display = 'block'; }
+        function closeDict() { document.getElementById('dict-manager').style.display = 'none'; }
+        function showFeedback(btn) {
+            const original = btn.innerText; btn.innerText = "OK!"; btn.style.color = "#10b981";
+            setTimeout(() => { btn.innerText = original; btn.style.color = ""; }, 800);
         }
-
-        function openDict() {
-            document.getElementById('dict-manager').style.display = 'block';
-            loadDictionaryUI();
+        function saveSettings() {
+            const sm = document.querySelector('input[name="shift_mode"]:checked');
+            const settings = { dark_mode: document.documentElement.classList.contains('dark'), wordStates: wordStates, details_open: document.getElementById('details_menu').open, shift_mode: sm ? sm.value : 'abs' };
+            document.querySelectorAll('input, textarea, select').forEach(el => {
+                if (el.type === 'checkbox') settings[el.id || el.name + "_" + el.value] = el.checked;
+                else if (el.id && el.type !== 'radio') settings[el.id] = el.value;
+            });
+            localStorage.ultraSettings = JSON.stringify(settings);
         }
-
-        function closeDict() {
-            document.getElementById('dict-manager').style.display = 'none';
+        async function init() {
+            if (localStorage.ultraSettings) {
+                const s = JSON.parse(localStorage.ultraSettings);
+                if (s.dark_mode) document.documentElement.classList.add('dark');
+                wordStates = s.wordStates || {};
+                if (s.details_open) document.getElementById('details_menu').open = true;
+                document.querySelectorAll('input, textarea, select').forEach(el => {
+                    const key = el.id || el.name + "_" + el.value;
+                    if (s[key] !== undefined) { if (el.type === 'checkbox') el.checked = s[key]; else el.value = s[key]; }
+                });
+                if(s.shift_mode) { const r = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`); if(r) r.checked = true; }
+            }
+            await loadDictionaryUI(); closeDict();
         }
-
         async function loadDictionaryUI() {
             try {
-                const r = await fetch('/get_dictionary');
-                const d = await r.json();
-                const words = [...(d.country || []), ...(d.capital || [])].sort();
+                const r = await fetch('/get_dictionary'); const dict = await r.json();
+                const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
+                let words = []; cats.forEach(c => words = words.concat(dict[c] || []));
+                words = Array.from(new Set(words)).sort();
                 document.getElementById('dict-list').innerHTML = words.map(w => {
                     const s = wordStates[w] || 'white';
-                    const bg = s === 'red' ? '#f43f5e' : s === 'blue' ? '#2563eb' : 'var(--input-bg)';
-                    const co = s === 'white' ? 'var(--text)' : 'white';
-                    return `<button onclick="toggleWord('${w}')" style="background:${bg}; color:${co}; font-size:11px; padding:10px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">${w}</button>`;
+                    const style = s === 'red' ? 'background:#f43f5e;color:white;border:none;' : s === 'blue' ? 'background:#2563eb;color:white;border:none;' : '';
+                    return `<button onclick="toggleWordState(this, '${w}')" style="${style} padding: 10px; border-radius: 12px; border: 1px solid var(--border); font-size: 10px; font-weight: bold; cursor: pointer;">${w}</button>`;
                 }).join('');
-            } catch (e) {}
+            } catch(e) {}
         }
-
-        function toggleWord(w) {
-            const s = wordStates[w] || 'white';
-            wordStates[w] = s === 'white' ? 'red' : s === 'red' ? 'blue' : 'white';
-            loadDictionaryUI();
-            saveSettings();
+        function toggleWordState(btn, word) {
+            const states = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
+            wordStates[word] = states[wordStates[word] || 'white'];
+            saveSettings(); loadDictionaryUI(); 
         }
-
+        function bulkSet(state) {
+            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
+            fetch('/get_dictionary').then(r => r.json()).then(dict => {
+                cats.forEach(c => { (dict[c] || []).forEach(w => { wordStates[w] = state; }); });
+                saveSettings(); loadDictionaryUI();
+            });
+        }
+        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value || 0) + delta); saveSettings(); }
         async function run() {
-            const btn = document.getElementById('btn');
-            btn.innerText = "WAIT...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn'); btn.innerText = "WAIT"; btn.disabled = true;
             const body = {
-                red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'),
-                blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue'),
-                categories: ["country", "capital"]
+                start_word: document.getElementById('sw').value, start_char: document.getElementById('sc').value,
+                must_char: document.getElementById('mc').value, all_start_char: document.getElementById('asc').value,
+                all_end_char: document.getElementById('aec').value, end_char: document.getElementById('ec').value,
+                exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
+                valid_chars: document.getElementById('valid_chars').value, max_len: parseInt(document.getElementById('ml').value),
+                use_shift: document.getElementById('use_shift').checked, ks_abs: parseInt(document.getElementById('ks_abs').value),
+                shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
+                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
+                auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
+                rt: document.getElementById('rt').checked, exclude_conjugate: document.getElementById('exclude_conjugate').checked,
+                once_constraint: document.getElementById('once').checked, len_mode: document.getElementById('len_mode').value,
+                categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
+                red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
             };
-
-            document.querySelectorAll('input, select').forEach(el => {
-                if (el.id) body[el.id] = el.type === 'checkbox' ? el.checked : el.value;
-            });
-
             try {
-                const r = await fetch('/search', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(body)
-                });
-                const d = await r.json();
-                currentRoutes = d.routes || [];
-                updateUI(d.count, d.score);
-            } catch (e) {
-                alert("探索失敗");
-            }
-            btn.innerText = "EXPLORE";
-            btn.disabled = false;
+                const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+                const d = await r.json(); currentRoutes = d.routes || [];
+                document.getElementById('stats').innerHTML = `<span>${d.count} R</span> <span style="opacity:0.3">|</span> <span>S: ${d.score.toLocaleString()}</span>`;
+                document.getElementById('stats').classList.remove('hidden');
+            } catch(e) { alert("ERR"); }
+            btn.innerText = "EXPLORE"; btn.disabled = false; display();
         }
-
-        function updateUI(count, score) {
-            document.getElementById('stat_count').innerText = count.toLocaleString();
-            document.getElementById('stat_score').innerText = score.toLocaleString();
-            
-            let r20 = 1;
-            if (score > 1000000) r20 = 18 + Math.min(2, Math.floor(score/1000000));
-            else if (score > 500000) r20 = 15 + Math.floor((score-500000)/150000);
-            else if (score > 100000) r20 = 10 + Math.floor((score-100000)/80000);
-            else r20 = Math.max(1, Math.ceil(score/10000));
-            r20 = Math.min(20, r20);
-
-            const colors = { iron: "#4b5563", bronze: "#92400e", silver: "#94a3b8", gold: "#eab308", platinum: "#2dd4bf", diamond: "#3b82f6" };
-            let bg = r20 <= 3 ? colors.iron : r20 <= 7 ? colors.bronze : r20 <= 11 ? colors.silver : r20 <= 15 ? colors.gold : r20 <= 18 ? colors.platinum : colors.diamond;
-            
-            const r5 = ['E','D','C','B','A'][Math.min(4, Math.floor((r20-1)/4))];
-            const r10 = Math.ceil(r20/2);
-
-            document.getElementById('rank_display').innerHTML = `
-                <span class="badge" style="background:#2563eb;">5階級: ${r5}</span>
-                <span class="badge" style="background:#10b981;">10階級: ${r10}</span>
-                <span class="badge" style="background:${bg}; color:white;">Rank ${r20}</span>
-            `;
-            
-            document.getElementById('stats').classList.remove('hidden');
-            display();
-        }
-
         function display() {
-            const isRt = document.getElementById('rt').checked;
-            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => {
-                const lines = rt.map((w, idx) => {
-                    const rev = isRt && idx % 2 !== 0;
-                    return `<div class="${rev ? 'ln-rev' : 'ln-norm'}">${rev ? w.split('').reverse().join('') + ' ◀' : (idx > 0 ? '▶ ' : '') + w}</div>`;
-                });
-                return `<div class="res-card"><div style="font-size:10px; opacity:0.5; margin-bottom:8px;">#${i+1} (${rt.join('').length}字)</div>${lines.join('')}</div>`;
-            }).join('');
+            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `
+                <div class="res-card">
+                    <div style="display:flex; justify-content:space-between; font-size:9px; color:#94a3b8; margin-bottom:4px;">
+                        <span>#${i+1}</span><button onclick="copyOne(${i}, this)" style="background:none; border:none; color:var(--accent); font-weight:900;">COPY</button>
+                    </div>
+                    <div style="font-weight:bold; font-size:13px; line-height:1.2;">${rt.join('→')}</div>
+                </div>`).join('');
         }
-
-        function copyBulk(type) {
-            const num = type === 'top' ? parseInt(document.getElementById('copy_num').value) || 10 : currentRoutes.length;
-            const targets = currentRoutes.slice(0, num);
-            const nl = document.getElementById('copy_newline').checked;
-            const withLen = document.getElementById('copy_with_len').checked;
-            const withIdx = document.getElementById('copy_with_index').checked;
-            const isRt = document.getElementById('rt').checked;
-
-            const text = targets.map((rt, i) => {
-                let dRt = rt.map((w, idx) => (isRt && idx % 2 !== 0) ? w.split('').reverse().join('') : w);
-                let line = (withIdx ? `${i+1}: ` : "") + dRt.join(nl ? '\n' : ' → ');
-                if (withLen) line += (nl ? '\n' : ' ') + `(${rt.join('').length}字)`;
-                return line;
-            }).join('\n\n');
-
-            navigator.clipboard.writeText(text);
-            alert(`${targets.length}件完了`);
-        }
-
-        function saveSettings() {
-            const s = { wordStates };
-            document.querySelectorAll('input, select').forEach(el => {
-                if (el.id) s[el.id] = el.type === 'checkbox' ? el.checked : el.value;
-            });
-            localStorage.setItem('ultra_config_v16', JSON.stringify(s));
-        }
-
-        window.onload = () => {
-            const s = JSON.parse(localStorage.getItem('ultra_config_v16') || "{}");
-            wordStates = s.wordStates || {};
-            Object.keys(s).forEach(k => {
-                const el = document.getElementById(k);
-                if (el) {
-                    if (el.type === 'checkbox') el.checked = s[k];
-                    else el.value = s[k];
-                }
-            });
-        };
-
-        function allReset() {
-            if(confirm("全て初期化しますか？")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
+        function resetSettings() { if(confirm("RESET?")){ localStorage.removeItem('ultraSettings'); location.reload(); } }
+        function copyOne(i, btn) { navigator.clipboard.writeText(currentRoutes[i].join(' → ')); showFeedback(btn); }
+        function copyAll(btn) { navigator.clipboard.writeText(currentRoutes.map(rt => rt.join(' → ')).join('\n')); showFeedback(btn); }
+        function copyTopN(btn) { const n = 10; navigator.clipboard.writeText(currentRoutes.slice(0, n).map(rt => rt.join(' → ')).join('\n')); showFeedback(btn); }
+        window.onload = init;
     </script>
 </body>
 </html>

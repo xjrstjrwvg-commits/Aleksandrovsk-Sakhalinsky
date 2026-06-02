@@ -1,235 +1,90 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>極・ULTRA ENGINE Pro</title>
-    <style>
-        :root { --bg: #f8fafc; --text: #0f172a; --glass: #ffffff; --border: #e2e8f0; --accent: #2563eb; --input-bg: #f1f5f9; }
-        .dark { --bg: #020617; --text: #f1f5f9; --glass: #0f172a; --border: #1e293b; --accent: #3b82f6; --input-bg: #1e293b; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 8px; -webkit-text-size-adjust: 100%; }
-        .max-w-md { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
-        .title { font-style: italic; color: var(--accent); font-weight: 900; font-size: 16px; text-transform: uppercase; white-space: nowrap; }
-        .glass { background-color: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 8px; }
-        
-        input, select, textarea, span, button { white-space: nowrap; }
-
-        input, select, textarea { background-color: var(--input-bg); border: 1px solid transparent; border-radius: 10px; padding: 8px; font-size: 13px; font-weight: bold; color: var(--text); width: 100%; box-sizing: border-box; outline: none; }
-        .grid { display: grid; gap: 5px; }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        .grid-2 { grid-template-columns: repeat(2, 1fr); }
-        #btn { background-color: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 900; font-size: 14px; cursor: pointer; min-width: 80px; }
-        .step-btn { background-color: var(--border); border: none; border-radius: 6px; width: 30px; height: 30px; font-weight: 900; color: var(--text); cursor: pointer; flex-shrink: 0; }
-
-        summary { list-style: none; cursor: pointer; font-size: 10px; font-weight: 900; text-align: center; color: var(--accent); padding: 5px; }
-        .res-card { background-color: var(--glass); border-radius: 14px; padding: 10px; margin-bottom: 6px; border: 1px solid var(--border); }
-        #dict-manager { position: fixed; inset: 0; z-index: 9999; background: var(--bg); padding: 15px; overflow-y: auto; display: none; }
-        .sticky-close { position: sticky; top: 0; z-index: 10000; width: 100%; padding: 12px; font-weight: 900; cursor: pointer; margin-bottom: 10px; border: none; background: var(--bg); border-bottom: 1px solid var(--border); color: #ef4444; }
-        .badge { font-size: 9px; font-weight: 900; border-radius: 15px; padding: 3px 8px; border: none; cursor: pointer; }
-        .hidden { display: none; }
-
-        /* 重なり防止の重要修正箇所 */
-        label { 
-            display: flex !important; 
-            align-items: center !important; 
-            gap: 6px !important; /* 文字とチェックボックスの間の余白 */
-            font-size: 10px; 
-            font-weight: 900; 
-            white-space: nowrap; 
-            cursor: pointer;
-            padding: 2px 0;
-        }
-        input[type="checkbox"], input[type="radio"] { 
-            width: 16px !important; 
-            height: 16px !important; 
-            margin: 0 !important; 
-            flex-shrink: 0 !important; /* チェックボックスが潰れないように */
-        }
-    </style>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"></script>
+<title>極・ULTRA ENGINE Pro</title>
 </head>
-<body onchange="saveSettings()" oninput="saveSettings()">
-    <div class="max-w-md">
-        <header>
-            <div class="title">Ultra Engine Pro</div>
-            <div style="display: flex; gap: 4px;">
-                <button onclick="toggleDarkMode()" style="background: none; border: none; font-size: 16px;">🌗</button>
-                <button onclick="resetSettings()" class="badge" style="background: #fee2e2; color: #ef4444;">RESET</button>
-                <button onclick="copyAll(this)" class="badge" style="background: var(--border); color: var(--text);">ALL</button>
-            </div>
-        </header>
 
-        <div class="glass">
-            <div class="grid grid-2"><input id="sw" placeholder="開始単語"><input id="mc" placeholder="必須(あ:2)"></div>
-            <div class="grid grid-3"><input id="sc" placeholder="開始字"><input id="ec" placeholder="終了字"><select id="len_mode"><option value="free">自由</option><option value="same">同長</option><option value="diff">異長</option></select></div>
+<body class="bg-gray-900 text-white">
 
-            <details id="details_menu">
-                <summary>＋ MORE SETTINGS</summary>
-                <div style="padding-top: 8px; display: flex; flex-direction: column; gap: 10px;">
-                    <div class="grid grid-2"><input id="asc" placeholder="全語開始"><input id="aec" placeholder="全語終了"></div>
-                    <div class="grid grid-2"><textarea id="gc" placeholder="グループ必須" style="height: 40px; font-size: 10px; white-space: normal;"></textarea><textarea id="cc" placeholder="選択必須" style="height: 40px; font-size: 10px; white-space: normal;"></textarea></div>
-                    <div class="grid grid-2"><input id="exc" placeholder="不可文字"><input id="bsc" placeholder="禁止開始"></div>
-                    
-                    <div style="border-top: 1px solid var(--border); padding-top: 8px;">
-                        <label><input type="checkbox" id="use_shift"> 50音ずらし</label>
-                        <div style="display: flex; align-items: center; gap: 8px; background: var(--input-bg); padding: 8px; border-radius: 10px; margin-top: 5px;">
-                            <div style="display: flex; gap: 8px;">
-                                <label><input type="radio" name="shift_mode" value="abs" checked> ±</label>
-                                <label><input type="radio" name="shift_mode" value="normal"> 通常</label>
-                            </div>
-                            <div style="margin-left: auto; display: flex; align-items: center; gap: 5px;">
-                                <button type="button" onclick="adjustVal('ks_abs',-1)" class="step-btn">-</button>
-                                <input id="ks_abs" value="1" style="width:30px; text-align: center; border: none; background: none; font-weight: 900;">
-                                <button type="button" onclick="adjustVal('ks_abs',1)" class="step-btn">+</button>
-                            </div>
-                        </div>
-                    </div>
+<div class="max-w-md mx-auto p-4 space-y-3">
 
-                    <!-- スイッチ群の重なりを解消 -->
-                    <div class="grid grid-2" style="gap: 6px; border-top: 1px solid var(--border); padding-top: 8px;">
-                        <label><input type="checkbox" id="allow_daku"> 濁点</label>
-                        <label><input type="checkbox" id="allow_handaku"> 半濁</label>
-                        <label style="color: #6366f1;"><input type="checkbox" id="auto_recovery"> 遡り</label>
-                        <label style="color: #2563eb;"><input type="checkbox" id="rt"> 牛耕</label>
-                        <label style="color: #2563eb;"><input type="checkbox" id="once"> 単一</label>
-                        <label style="color: #e11d48;"><input type="checkbox" id="char_limit_mode"> 重複禁</label>
-                        <label style="color: #f43f5e;"><input type="checkbox" id="exclude_conjugate"> 共役排除</label>
-                        <label style="color: #f97316;"><input type="checkbox" id="unify_small"> 大=小</label>
-                    </div>
-                </div>
-            </details>
+<select id="category" class="w-full p-2 text-black rounded">
+<option value="country">国</option>
+<option value="capital">首都</option>
+</select>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 8px;">
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <span style="font-size: 10px; font-weight: 900;">単語数</span>
-                    <button type="button" onclick="adjustVal('ml',-1)" class="step-btn">-</button>
-                    <input id="ml" value="5" style="width:25px; text-align:center; background:none; border:none; font-weight:900;">
-                    <button type="button" onclick="adjustVal('ml',1)" class="step-btn">+</button>
-                </div>
-                <div style="display: flex; gap: 4px; align-items: center;">
-                    <button onclick="copyTopN(this)" style="background: rgba(37,99,235,0.1); color: #2563eb; border: none; padding: 8px 12px; border-radius: 10px; font-size: 10px; font-weight: 900;">TOP</button>
-                    <button id="btn" onclick="run()">EXPLORE</button>
-                </div>
-            </div>
+<input id="ml" type="number" value="3" class="w-full p-2 text-black rounded mt-2">
 
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                <div style="display: flex; gap: 12px;">
-                    <label><input type="checkbox" name="cat" value="country" checked onchange="loadDictionaryUI()"> 国</label>
-                    <label><input type="checkbox" name="cat" value="capital" onchange="loadDictionaryUI()"> 首都</label>
-                </div>
-                <div id="stats" style="font-weight: 900; color: #3b82f6; text-align: right;" class="hidden"></div>
-            </div>
-        </div>
-        <div id="res"></div>
-    </div>
+<label><input type="checkbox" id="char_limit"> 文字重複禁止</label><br>
+<label><input type="checkbox" id="rt"> 牛耕モード</label><br>
+<label><input type="checkbox" id="exclude"> 共役排除</label><br>
 
-    <div id="dict-manager">
-        <button onclick="closeDict()" class="sticky-close">CLOSE</button>
-        <div class="grid grid-2" style="margin-bottom: 10px;">
-            <button onclick="bulkSet('white')" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border); font-size: 12px; font-weight: 900;">全開</button>
-            <button onclick="bulkSet('red')" style="padding: 10px; border-radius: 10px; border: 1px solid #fee2e2; color: #ef4444; font-size: 12px; font-weight: 900;">全禁</button>
-        </div>
-        <div id="dict-list" class="grid grid-2"></div>
-    </div>
-    <button onclick="openDict()" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: white; border: none; padding: 10px 24px; border-radius: 25px; font-size: 11px; font-weight: 900; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 50; white-space: nowrap;">DICTIONARY</button>
+<input id="ttl" type="number" placeholder="TTL" class="w-full p-2 text-black rounded mt-2">
 
-    <script>
-        let currentRoutes = []; let wordStates = {};
-        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); saveSettings(); }
-        function openDict() { document.getElementById('dict-manager').style.display = 'block'; }
-        function closeDict() { document.getElementById('dict-manager').style.display = 'none'; }
-        function showFeedback(btn) {
-            const original = btn.innerText; btn.innerText = "OK!"; btn.style.color = "#10b981";
-            setTimeout(() => { btn.innerText = original; btn.style.color = ""; }, 800);
-        }
-        function saveSettings() {
-            const sm = document.querySelector('input[name="shift_mode"]:checked');
-            const settings = { dark_mode: document.documentElement.classList.contains('dark'), wordStates: wordStates, details_open: document.getElementById('details_menu').open, shift_mode: sm ? sm.value : 'abs' };
-            document.querySelectorAll('input, textarea, select').forEach(el => {
-                if (el.type === 'checkbox') settings[el.id || el.name + "_" + el.value] = el.checked;
-                else if (el.id && el.type !== 'radio') settings[el.id] = el.value;
-            });
-            localStorage.ultraSettings = JSON.stringify(settings);
-        }
-        async function init() {
-            if (localStorage.ultraSettings) {
-                const s = JSON.parse(localStorage.ultraSettings);
-                if (s.dark_mode) document.documentElement.classList.add('dark');
-                wordStates = s.wordStates || {};
-                if (s.details_open) document.getElementById('details_menu').open = true;
-                document.querySelectorAll('input, textarea, select').forEach(el => {
-                    const key = el.id || el.name + "_" + el.value;
-                    if (s[key] !== undefined) { if (el.type === 'checkbox') el.checked = s[key]; else el.value = s[key]; }
-                });
-                if(s.shift_mode) { const r = document.querySelector(`input[name="shift_mode"][value="${s.shift_mode}"]`); if(r) r.checked = true; }
-            }
-            await loadDictionaryUI(); closeDict();
-        }
-        async function loadDictionaryUI() {
-            try {
-                const r = await fetch('/get_dictionary'); const dict = await r.json();
-                const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-                let words = []; cats.forEach(c => words = words.concat(dict[c] || []));
-                words = Array.from(new Set(words)).sort();
-                document.getElementById('dict-list').innerHTML = words.map(w => {
-                    const s = wordStates[w] || 'white';
-                    const style = s === 'red' ? 'background:#f43f5e;color:white;border:none;' : s === 'blue' ? 'background:#2563eb;color:white;border:none;' : '';
-                    return `<button onclick="toggleWordState(this, '${w}')" style="${style} padding: 10px; border-radius: 12px; border: 1px solid var(--border); font-size: 10px; font-weight: bold; cursor: pointer;">${w}</button>`;
-                }).join('');
-            } catch(e) {}
-        }
-        function toggleWordState(btn, word) {
-            const states = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
-            wordStates[word] = states[wordStates[word] || 'white'];
-            saveSettings(); loadDictionaryUI(); 
-        }
-        function bulkSet(state) {
-            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            fetch('/get_dictionary').then(r => r.json()).then(dict => {
-                cats.forEach(c => { (dict[c] || []).forEach(w => { wordStates[w] = state; }); });
-                saveSettings(); loadDictionaryUI();
-            });
-        }
-        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value || 0) + delta); saveSettings(); }
-        async function run() {
-            const btn = document.getElementById('btn'); btn.innerText = "WAIT"; btn.disabled = true;
-            const body = {
-                start_word: document.getElementById('sw').value, start_char: document.getElementById('sc').value,
-                must_char: document.getElementById('mc').value, all_start_char: document.getElementById('asc').value,
-                all_end_char: document.getElementById('aec').value, end_char: document.getElementById('ec').value,
-                exclude_chars: document.getElementById('exc').value, ban_start_chars: document.getElementById('bsc').value,
-                valid_chars: document.getElementById('valid_chars').value, max_len: parseInt(document.getElementById('ml').value),
-                use_shift: document.getElementById('use_shift').checked, ks_abs: parseInt(document.getElementById('ks_abs').value),
-                shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
-                allow_daku: document.getElementById('allow_daku').checked, allow_handaku: document.getElementById('allow_handaku').checked,
-                auto_recovery: document.getElementById('auto_recovery').checked, char_limit_mode: document.getElementById('char_limit_mode').checked,
-                rt: document.getElementById('rt').checked, exclude_conjugate: document.getElementById('exclude_conjugate').checked,
-                once_constraint: document.getElementById('once').checked, len_mode: document.getElementById('len_mode').value,
-                categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
-                red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'), blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue')
-            };
-            try {
-                const r = await fetch('/search', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-                const d = await r.json(); currentRoutes = d.routes || [];
-                document.getElementById('stats').innerHTML = `<span>${d.count} R</span> <span style="opacity:0.3">|</span> <span>S: ${d.score.toLocaleString()}</span>`;
-                document.getElementById('stats').classList.remove('hidden');
-            } catch(e) { alert("ERR"); }
-            btn.innerText = "EXPLORE"; btn.disabled = false; display();
-        }
-        function display() {
-            document.getElementById('res').innerHTML = currentRoutes.map((rt, i) => `
-                <div class="res-card">
-                    <div style="display:flex; justify-content:space-between; font-size:9px; color:#94a3b8; margin-bottom:4px;">
-                        <span>#${i+1}</span><button onclick="copyOne(${i}, this)" style="background:none; border:none; color:var(--accent); font-weight:900;">COPY</button>
-                    </div>
-                    <div style="font-weight:bold; font-size:13px; line-height:1.2;">${rt.join('→')}</div>
-                </div>`).join('');
-        }
-        function resetSettings() { if(confirm("RESET?")){ localStorage.removeItem('ultraSettings'); location.reload(); } }
-        function copyOne(i, btn) { navigator.clipboard.writeText(currentRoutes[i].join(' → ')); showFeedback(btn); }
-        function copyAll(btn) { navigator.clipboard.writeText(currentRoutes.map(rt => rt.join(' → ')).join('\n')); showFeedback(btn); }
-        function copyTopN(btn) { const n = 10; navigator.clipboard.writeText(currentRoutes.slice(0, n).map(rt => rt.join(' → ')).join('\n')); showFeedback(btn); }
-        window.onload = init;
-    </script>
+<button onclick="run()" class="w-full bg-blue-500 p-3 rounded mt-3">
+Explore
+</button>
+
+<div id="out" class="space-y-2 mt-3"></div>
+
+</div>
+
+<script>
+
+function save(){
+localStorage.setItem("category",category.value);
+localStorage.setItem("ml",ml.value);
+localStorage.setItem("char",char_limit.checked);
+localStorage.setItem("rt",rt.checked);
+localStorage.setItem("ex",exclude.checked);
+localStorage.setItem("ttl",ttl.value);
+}
+
+function load(){
+category.value=localStorage.getItem("category")||"country";
+ml.value=localStorage.getItem("ml")||3;
+char_limit.checked=localStorage.getItem("char")==="true";
+rt.checked=localStorage.getItem("rt")==="true";
+exclude.checked=localStorage.getItem("ex")==="true";
+ttl.value=localStorage.getItem("ttl")||"";
+}
+
+async function run(){
+
+save();
+
+const res=await fetch("/search",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+category:category.value,
+ml:+ml.value,
+char_limit_mode:char_limit.checked,
+rt:rt.checked,
+exclude_conjugate:exclude.checked,
+ttl:ttl.value?+ttl.value:null,
+limit:50
+})
+});
+
+const d=await res.json();
+
+out.innerHTML="";
+
+d.results.forEach(r=>{
+const div=document.createElement("div");
+div.className="bg-gray-700 p-2 rounded";
+div.textContent=r.join(" → ");
+out.appendChild(div);
+});
+
+}
+
+load();
+
+</script>
+
 </body>
 </html>

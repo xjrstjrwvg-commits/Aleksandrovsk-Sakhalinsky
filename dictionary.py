@@ -1,6 +1,10 @@
 # dictionary.py
 # 極・ウルトラエンジン Pro 用 辞書データ
 
+# dictionary.py
+
+import copy
+
 DICTIONARY_MASTER = {
     "country": [
         "アイスランド", "アイルランド", "アゼルバイジャン", "アフガニスタン", "アメリカ",
@@ -87,3 +91,57 @@ DICTIONARY_MASTER = {
         "ワルシャワ", "ンジャメナ"
     ]
 }
+
+# -----------------------------
+# 文字体系
+# -----------------------------
+KANA_LIST = list("アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン")
+
+SMALL_TO_LARGE = {
+    "ァ":"ア","ィ":"イ","ゥ":"ウ","ェ":"エ","ォ":"オ",
+    "ッ":"ツ","ャ":"ヤ","ュ":"ユ","ョ":"ヨ"
+}
+
+DAKU_MAP = {
+    "カ":"ガ","キ":"ギ","ク":"グ","ケ":"ゲ","コ":"ゴ",
+    "サ":"ザ","シ":"ジ","ス":"ズ","セ":"ゼ","ソ":"ゾ",
+    "タ":"ダ","チ":"ヂ","ツ":"ヅ","テ":"デ","ト":"ド",
+    "ハ":"バ","ヒ":"ビ","フ":"ブ","ヘ":"ベ","ホ":"ボ"
+}
+
+HANDAKU_MAP = {
+    "ハ":"パ","ヒ":"ピ","フ":"プ","ヘ":"ペ","ホ":"ポ"
+}
+
+REV_MAP = {v:k for k,v in {**DAKU_MAP,**HANDAKU_MAP}.items()}
+
+
+def normalize(w):
+    return w.replace("ー","")
+
+
+# -----------------------------
+# ノード
+# -----------------------------
+class WordNode:
+    def __init__(self,i,w,cat):
+        w = normalize(w)
+        self.id=i
+        self.word=w
+        self.cat=cat
+        self.head=w[0]
+        self.tail=w[-1]
+        self.chars=set(w)
+
+
+# -----------------------------
+# ビルド
+# -----------------------------
+def build_nodes():
+    nodes=[]
+    i=0
+    for cat,words in DICTIONARY_MASTER.items():
+        for w in words:
+            nodes.append(WordNode(i,w,cat))
+            i+=1
+    return nodes

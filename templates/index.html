@@ -26,13 +26,16 @@
         }
     </style>
 </head>
+
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-3 pb-24" onchange="saveSettings()" oninput="saveSettings()">
     <div class="max-w-md mx-auto space-y-3">
+
         <header class="flex justify-between items-center py-1">
             <div class="flex items-center gap-3">
                 <h1 class="text-xl font-black italic text-blue-600 uppercase tracking-tighter">Ultra Engine</h1>
                 <button onclick="toggleDarkMode()" class="text-xl p-1 hover:scale-110 transition-transform">🌗</button>
             </div>
+
             <div class="flex gap-2">
                 <button onclick="resetSettings()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 px-4 py-2 rounded-full text-[10px] font-bold uppercase">Reset</button>
                 <button onclick="copyAll()" id="allCopyBtn" class="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full text-[10px] font-bold uppercase">All Copy</button>
@@ -40,7 +43,9 @@
         </header>
 
         <div class="glass rounded-[28px] p-5 space-y-4 shadow-2xl">
+
             <input id="sw" placeholder="開始単語" class="w-full">
+
             <div class="grid grid-cols-3 gap-2">
                 <input id="sc" placeholder="開始字" class="w-full">
                 <input id="mc" placeholder="必須文字 (ア:2,イ)" class="w-full">
@@ -52,7 +57,9 @@
                     <span class="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest group-open:hidden">＋ 詳細設定を表示</span>
                     <span class="text-[11px] font-black text-rose-500 uppercase tracking-widest hidden group-open:block">－ 詳細設定を閉じる</span>
                 </summary>
+
                 <div class="space-y-5 pt-2 pb-4 px-1">
+
                     <div class="grid grid-cols-2 gap-3 border-t border-slate-200 dark:border-slate-700 pt-4">
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-blue-500 uppercase ml-1">全語開始字</label>
@@ -214,6 +221,11 @@
             </div>
 
             <div id="stats" class="text-center text-[10px] font-bold text-blue-500 hidden uppercase py-1"></div>
+
+            <!-- ★★★ Explore ボタン（スタートボタン） ★★★ -->
+            <button id="btn" onclick="run()" class="w-full bg-blue-600 text-white py-4 rounded-full font-black text-sm tracking-widest active:scale-95 transition-all">
+                Explore
+            </button>
         </div>
 
         <div id="res" class="space-y-3 pb-20"></div>
@@ -222,237 +234,238 @@
     <div id="dict-manager" class="hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-5 overflow-y-auto">
         <button onclick="document.getElementById('dict-manager').classList.add('hidden')" class="mb-5 font-bold text-rose-500">CLOSE</button>
         <div class="grid grid-cols-2 gap-2 mb-5">
-            <button onclick="bulkSet('white')" class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl font-bold">全開放</button>
-            <button onclick="bulkSet('red')" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 p-3 rounded-xl font-bold">全禁止</button>
+            <button onclick="setAllDict('normal')" class="bg-slate-200 dark:bg-slate-700 p-2 rounded-lg text-xs font-bold">全て通常</button>
+            <button onclick="setAllDict('ban')" class="bg-rose-200 dark:bg-rose-800 p-2 rounded-lg text-xs font-bold">全て禁止</button>
+            <button onclick="setAllDict('must')" class="bg-emerald-200 dark:bg-emerald-800 p-2 rounded-lg text-xs font-bold">全て必須</button>
+            <button onclick="saveDict()" class="bg-blue-200 dark:bg-blue-800 p-2 rounded-lg text-xs font-bold">保存</button>
         </div>
-        <div id="dict-list" class="grid grid-cols-2 gap-1"></div>
+
+        <div id="dict-list" class="custom-scroll space-y-2"></div>
     </div>
-    <button onclick="document.getElementById('dict-manager').classList.remove('hidden')" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest opacity-80 hover:opacity-100">Dictionary</button>
 
     <script>
-        let currentRoutes = [];
-        let wordStates = {};
-        let realtimeTimer = null;
-
-        function to_katakana(text) { return text.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60)); }
-        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); saveSettings(); }
-        function getWordStyle(state) {
-            if (state === 'red') return "background-color: #f43f5e; color: white; border-color: #e11d48;";
-            if (state === 'blue') return "background-color: #2563eb; color: white; border-color: #1d4ed8;";
-            return "";
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle("dark");
+            localStorage.setItem("dark", document.documentElement.classList.contains("dark"));
         }
 
-        async function init() {
-            if (localStorage.ultraSettings) {
-                const s = JSON.parse(localStorage.ultraSettings);
-                const fields = [
-                    'sw','sc','asc','mc','ec','aec','exc','bsc','ml','ps','ks_abs','ttl',
-                    'gc','cc','sort_mode','unify_scope','copy_limit','valid_chars','len_mode',
-                    'timeout','limit','display_mode'
-                ];
-                fields.forEach(f => { if (s[f] !== undefined && document.getElementById(f)) document.getElementById(f).value = s[f]; });
-                const checks = [
-                    'allow_daku','allow_handaku','char_limit_mode','auto_recovery','unify_small',
-                    'rt','once','use_shift','exclude_conjugate','limit_enabled'
-                ];
-                checks.forEach(f => { if (s[f] !== undefined && document.getElementById(f)) document.getElementById(f).checked = s[f]; });
-                if (s.dark_mode) document.documentElement.classList.add('dark');
-                if (s.wordStates) wordStates = s.wordStates;
-            }
-            await loadDictionaryUI();
+        if (localStorage.getItem("dark") === "true") {
+            document.documentElement.classList.add("dark");
         }
 
-        async function loadDictionaryUI() {
-            const r = await fetch('/get_dictionary');
-            const dict = await r.json();
-            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            let words = [];
-            cats.forEach(c => words = words.concat(dict[c] || []));
-            words = Array.from(new Set(words)).sort();
-            document.getElementById('dict-list').innerHTML = words.map(w => {
-                const s = wordStates[w] || 'white';
-                return `<button onclick="toggleWordState(this, '${w}')" class="p-2 rounded-lg border text-[10px] font-bold ${s==='white'?'btn-white':''}" style="${getWordStyle(s)}">${w}</button>`;
-            }).join('');
-        }
-
-        function toggleWordState(btn, word) {
-            const states = { 'white': 'red', 'red': 'blue', 'blue': 'white' };
-            wordStates[word] = states[wordStates[word] || 'white'];
+        function adjustVal(id, delta) {
+            const el = document.getElementById(id);
+            el.value = Number(el.value || 0) + delta;
             saveSettings();
-            loadDictionaryUI();
-        }
-
-        function bulkSet(state) {
-            const cats = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value);
-            fetch('/get_dictionary').then(r => r.json()).then(dict => {
-                cats.forEach(c => {
-                    (dict[c] || []).forEach(w => { wordStates[w] = state; });
-                });
-                saveSettings();
-                loadDictionaryUI();
-            });
         }
 
         function saveSettings() {
-            const sm = document.querySelector('input[name="shift_mode"]:checked');
-            localStorage.ultraSettings = JSON.stringify({
-                sw: v('sw'), sc: v('sc'), asc: v('asc'), mc: v('mc'), ec: v('ec'), aec: v('aec'),
-                exc: v('exc'), bsc: v('bsc'), ml: v('ml'), ps: v('ps'), ks_abs: v('ks_abs'),
-                ttl: v('ttl'), valid_chars: v('valid_chars'), len_mode: v('len_mode'),
-                sort_mode: v('sort_mode'), unify_scope: v('unify_scope'), copy_limit: v('copy_limit'),
-                timeout: v('timeout'), limit: v('limit'), display_mode: v('display_mode'),
-                use_shift: c('use_shift'), exclude_conjugate: c('exclude_conjugate'),
-                allow_daku: c('allow_daku'), allow_handaku: c('allow_handaku'),
-                char_limit_mode: c('char_limit_mode'), auto_recovery: c('auto_recovery'),
-                unify_small: c('unify_small'), rt: c('rt'), once: c('once'),
-                limit_enabled: c('limit_enabled'),
-                dark_mode: document.documentElement.classList.contains('dark'),
-                wordStates: wordStates, shift_mode: sm ? sm.value : 'abs'
-            });
+            const ids = [
+                "sw","sc","mc","ec","asc","aec","valid_chars","gc","cc","exc","bsc",
+                "ks_abs","sort_mode","unify_scope","timeout","limit","ps","ttl",
+                "len_mode","copy_limit","ml","display_mode"
+            ];
+            const data = {};
+            ids.forEach(id => data[id] = document.getElementById(id).value);
+
+            const checks = [
+                "use_shift","allow_daku","allow_handaku","auto_recovery","unify_small",
+                "rt","once","char_limit_mode","exclude_conjugate","limit_enabled"
+            ];
+            checks.forEach(id => data[id] = document.getElementById(id).checked);
+
+            const cats = [...document.querySelectorAll("input[name='cat']")].map(c => ({v:c.value, c:c.checked}));
+            data["cats"] = cats;
+
+            localStorage.setItem("ultra_settings", JSON.stringify(data));
         }
 
-        function v(id){ const el=document.getElementById(id); return el?el.value:''; }
-        function c(id){ const el=document.getElementById(id); return el?el.checked:false; }
+        function loadSettings() {
+            const raw = localStorage.getItem("ultra_settings");
+            if (!raw) return;
+            const data = JSON.parse(raw);
 
-        function resetSettings() { localStorage.removeItem('ultraSettings'); location.reload(); }
-        function adjustVal(id, delta) { const el = document.getElementById(id); el.value = Math.max(0, parseInt(el.value || 0) + delta); saveSettings(); }
+            Object.keys(data).forEach(k => {
+                const el = document.getElementById(k);
+                if (!el) return;
+                if (typeof data[k] === "boolean") el.checked = data[k];
+                else el.value = data[k];
+            });
 
-        function parseConstraintTextarea(text) {
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-            return lines;
+            if (data.cats) {
+                data.cats.forEach(o => {
+                    const el = document.querySelector(`input[name='cat'][value='${o.v}']`);
+                    if (el) el.checked = o.c;
+                });
+            }
+        }
+
+        loadSettings();
+        function loadDictionaryUI() {
+            fetch("/get_dictionary")
+                .then(r => r.json())
+                .then(dict => {
+                    const cats = [...document.querySelectorAll("input[name='cat']:checked")].map(c => c.value);
+                    let words = [];
+                    cats.forEach(c => words.push(...dict[c]));
+                    words = [...new Set(words)];
+
+                    const list = document.getElementById("dict-list");
+                    list.innerHTML = "";
+
+                    const saved = JSON.parse(localStorage.getItem("dict_status") || "{}");
+
+                    words.forEach(w => {
+                        const st = saved[w] || "normal";
+                        const btn = document.createElement("button");
+                        btn.textContent = w;
+                        btn.className =
+                            "w-full text-left px-3 py-2 rounded-lg font-bold text-xs " +
+                            (st === "ban"
+                                ? "bg-rose-300 dark:bg-rose-800"
+                                : st === "must"
+                                ? "bg-emerald-300 dark:bg-emerald-800"
+                                : "bg-slate-200 dark:bg-slate-700");
+
+                        btn.onclick = () => {
+                            const now = saved[w] || "normal";
+                            const next = now === "normal" ? "ban" : now === "ban" ? "must" : "normal";
+                            saved[w] = next;
+                            localStorage.setItem("dict_status", JSON.stringify(saved));
+                            loadDictionaryUI();
+                        };
+
+                        list.appendChild(btn);
+                    });
+                });
+        }
+
+        function setAllDict(mode) {
+            const raw = localStorage.getItem("dict_status");
+            const saved = raw ? JSON.parse(raw) : {};
+            Object.keys(saved).forEach(k => saved[k] = mode);
+            localStorage.setItem("dict_status", JSON.stringify(saved));
+            loadDictionaryUI();
+        }
+
+        function saveDict() {
+            alert("辞書設定を保存しました");
+        }
+
+        function copyAll() {
+            const limit = Number(document.getElementById("copy_limit").value || 10);
+            const items = [...document.querySelectorAll(".route-item")].slice(0, limit);
+            const text = items.map(i => i.textContent.trim()).join("\n");
+            navigator.clipboard.writeText(text);
+            alert("コピーしました");
+        }
+
+        function renderRoute(route) {
+            const div = document.createElement("div");
+            div.className =
+                "route-item bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm font-bold shadow";
+            div.textContent = route.join(" → ");
+            return div;
         }
 
         async function run() {
-            if (realtimeTimer) { clearTimeout(realtimeTimer); realtimeTimer = null; }
-            const btn = document.getElementById('btn');
-            btn.innerText = "EXPLORING...";
-            btn.disabled = true;
-            document.getElementById('res').innerHTML = "";
-            document.getElementById('stats').classList.add('hidden');
+            document.getElementById("res").innerHTML = "";
+            document.getElementById("stats").classList.add("hidden");
 
-            const displayMode = document.getElementById('display_mode').value;
-            const limitEnabled = document.getElementById('limit_enabled').checked;
-
-            const body = {
-                start_word: v('sw'),
-                start_char: v('sc'),
-                all_start_char: v('asc'),
-                must_char: v('mc'),
-                end_char: v('ec'),
-                all_end_char: v('aec'),
-                exclude_chars: v('exc'),
-                ban_start_chars: v('bsc'),
-                valid_chars: v('valid_chars'),
-                len_mode: v('len_mode'),
-                max_len: parseInt(v('ml') || 5),
-                pos_shift: parseInt(v('ps') || 0),
-                use_shift: c('use_shift'),
-                ks_abs: parseInt(v('ks_abs') || 1),
-                shift_mode: document.querySelector('input[name="shift_mode"]:checked').value,
-                allow_daku: c('allow_daku'),
-                allow_handaku: c('allow_handaku'),
-                auto_recovery: c('auto_recovery'),
-                char_limit_mode: c('char_limit_mode'),
-                unify_small: c('unify_small'),
-                round_trip: c('rt'),
-                exclude_conjugate: c('exclude_conjugate'),
-                categories: Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(c => c.value),
-                red_words: Object.keys(wordStates).filter(k => wordStates[k] === 'red'),
-                blue_words: Object.keys(wordStates).filter(k => wordStates[k] === 'blue'),
-                sort_mode: v('sort_mode'),
-                unify_scope: v('unify_scope'),
-                timeout: parseInt(v('timeout') || 15),
-                limit: parseInt(v('limit') || 1500),
-                limit_enabled: limitEnabled,
-                target_total_len: v('ttl') ? parseInt(v('ttl')) : null,
-                once_constraint: c('once'),
-                group_constraints: parseConstraintTextarea(v('gc')),
-                choice_constraints: parseConstraintTextarea(v('cc')),
-                exclusive_choice: false
+            const payload = {
+                start_word: sw.value,
+                start_char: sc.value,
+                must_char: mc.value,
+                end_char: ec.value,
+                all_start_char: asc.value,
+                all_end_char: aec.value,
+                valid_chars: valid_chars.value,
+                group_constraints: gc.value.split("\n"),
+                choice_constraints: cc.value.split("\n"),
+                exclude_chars: exc.value,
+                ban_start_chars: bsc.value,
+                ks_abs: ks_abs.value,
+                sort_mode: sort_mode.value,
+                unify_scope: unify_scope.value,
+                timeout: timeout.value,
+                limit: limit.value,
+                pos_shift: ps.value,
+                target_total_len: ttl.value,
+                len_mode: len_mode.value,
+                copy_limit: copy_limit.value,
+                max_len: ml.value,
+                display_mode: display_mode.value,
+                categories: [...document.querySelectorAll("input[name='cat']:checked")].map(c => c.value),
+                use_shift: use_shift.checked,
+                allow_daku: allow_daku.checked,
+                allow_handaku: allow_handaku.checked,
+                auto_recovery: auto_recovery.checked,
+                unify_small: unify_small.checked,
+                round_trip: rt.checked,
+                once_constraint: once.checked,
+                char_limit_mode: char_limit_mode.checked,
+                exclude_conjugate: exclude_conjugate.checked,
+                limit_enabled: limit_enabled.checked,
+                red_words: Object.keys(JSON.parse(localStorage.getItem("dict_status") || "{}")).filter(
+                    k => JSON.parse(localStorage.getItem("dict_status"))[k] === "ban"
+                ),
+                blue_words: Object.keys(JSON.parse(localStorage.getItem("dict_status") || "{}")).filter(
+                    k => JSON.parse(localStorage.getItem("dict_status"))[k] === "must"
+                )
             };
 
-            const r = await fetch('/search', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(body)
-            });
-            const d = await r.json();
-            currentRoutes = d.routes || [];
-            btn.innerText = "Explore";
-            btn.disabled = false;
+            const mode = display_mode.value;
 
-            if (displayMode === 'count') {
-                displayCountOnly(d.count || currentRoutes.length);
-            } else if (displayMode === 'realtime') {
-                displayRealtime();
-            } else {
-                displayNormal();
+            if (mode === "realtime") {
+                runRealtime(payload);
+                return;
             }
+
+            const res = await fetch("/search", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            const box = document.getElementById("res");
+
+            if (mode === "count") {
+                box.innerHTML =
+                    `<div class="text-center text-xl font-black text-blue-600 py-10">${data.count} 件</div>`;
+                return;
+            }
+
+            data.routes.forEach(r => box.appendChild(renderRoute(r)));
+
+            document.getElementById("stats").textContent = `${data.count} 件`;
+            document.getElementById("stats").classList.remove("hidden");
         }
 
-        function displayNormal() {
-            const res = document.getElementById('res');
-            res.innerHTML = currentRoutes.map((rt, i) => cardHTML(rt, i)).join('');
-            updateStats();
-        }
+        async function runRealtime(payload) {
+            const box = document.getElementById("res");
+            box.innerHTML = "";
 
-        function displayRealtime() {
-            const res = document.getElementById('res');
-            res.innerHTML = '';
-            let idx = 0;
-            const chunk = 20;
+            const res = await fetch("/search", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            let i = 0;
             function step() {
-                const slice = currentRoutes.slice(idx, idx + chunk);
-                res.insertAdjacentHTML('beforeend', slice.map((rt, i) => cardHTML(rt, idx + i)).join(''));
-                idx += chunk;
-                updateStats();
-                if (idx < currentRoutes.length) {
-                    realtimeTimer = setTimeout(step, 80);
-                }
+                if (i >= data.routes.length) return;
+                box.appendChild(renderRoute(data.routes[i]));
+                i++;
+                requestAnimationFrame(step);
             }
             step();
-        }
 
-        function displayCountOnly(count) {
-            const res = document.getElementById('res');
-            res.innerHTML = `
-                <div class="glass p-8 rounded-[28px] flex flex-col items-center justify-center text-center">
-                    <div class="text-[11px] font-black text-slate-400 uppercase mb-2">数字のみモード</div>
-                    <div class="text-4xl font-black text-blue-500 mb-2">${count}</div>
-                    <div class="text-[11px] font-bold text-slate-500">件マッチしました</div>
-                </div>`;
-            const stats = document.getElementById('stats');
-            stats.innerText = `${count} ROUTES FOUND`;
-            stats.classList.remove('hidden');
+            document.getElementById("stats").textContent = `${data.count} 件`;
+            document.getElementById("stats").classList.remove("hidden");
         }
-
-        function cardHTML(rt, i) {
-            return `
-                <div class="glass p-4 rounded-[20px] flex flex-col gap-2">
-                    <div class="flex justify-between items-center text-[10px] font-black text-slate-400">
-                        <span>#${i+1}</span>
-                        <button onclick="copyOne(${i})" class="text-blue-600">Copy</button>
-                    </div>
-                    <div class="font-bold text-sm break-words">${rt.join(' → ')}</div>
-                    <div class="text-[9px] font-black uppercase text-blue-500">${rt.join('').length} letters</div>
-                </div>`;
-        }
-
-        function updateStats() {
-            const stats = document.getElementById('stats');
-            stats.innerText = `${currentRoutes.length} ROUTES FOUND`;
-            stats.classList.remove('hidden');
-        }
-
-        function copyOne(i) { navigator.clipboard.writeText(currentRoutes[i].join(' → ')); }
-        function copyAll() { navigator.clipboard.writeText(currentRoutes.map(rt => rt.join(' → ')).join('\n')); }
-        function copyTopN() {
-            const n = parseInt(document.getElementById('copy_limit').value || '10');
-            navigator.clipboard.writeText(currentRoutes.slice(0, n).map(rt => rt.join(' → ')).join('\n'));
-        }
-
-        window.onload = init;
     </script>
 </body>
 </html>
-```

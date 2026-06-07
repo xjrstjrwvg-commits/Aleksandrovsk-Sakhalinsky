@@ -1,5 +1,3 @@
-# app.py — ULTRA ENGINE Pro 完全復元版
-
 import os
 import sys
 import time
@@ -139,15 +137,8 @@ def get_variants(char: str, allow_daku: bool, allow_handaku: bool, unify_small=F
 
 
 def parse_must_chars(raw: str, unify_small=False, unify_daku=False, unify_handaku=False):
-    """
-    例:
-      "あ,い,う"      → ア,イ,ウ を 1 回以上
-      "あ:2,い"       → アは2回以上, イは1回以上
-      "あ=2,い=1"     → アはちょうど2回, イはちょうど1回
-    """
     if not raw:
         return []
-
     tokens = re.split("[、,]", to_katakana(raw))
     res = []
     for t in tokens:
@@ -192,351 +183,348 @@ def index():
 @app.route("/get_dictionary")
 def get_dictionary():
     return jsonify(DICTIONARY_MASTER)
-
-
 # =========================
-#  メイン探索
+#  探索ルート
 # =========================
 @app.route("/search", methods=["POST"])
 def search():
-    d = request.json or {}
+    data = request.json or {}
 
-    # ---- 基本パラメータ ----
-    timeout_val = int(d.get("timeout", 15))
-    timeout_enabled = d.get("timeout_enabled", True)
-    timeout = timeout_val if timeout_enabled else None
+    # -------------------------
+    # 基本パラメータ
+    # -------------------------
+    timeout_enabled = data.get("timeout_enabled", True)
+    timeout_sec = int(data.get("timeout", 15)) if timeout_enabled else None
+    limit_enabled = data.get("limit_enabled", True)
+    limit_count = int(data.get("limit", 1500))
+    max_len = int(data.get("max_len", 5))
 
-    limit = int(d.get("limit", 1500))
-    limit_enabled = d.get("limit_enabled", True)
+    pos_shift = int(data.get("pos_shift", 0))
+    use_shift = data.get("use_shift", False)
+    ks_abs = int(data.get("ks_abs", 1))
+    shift_mode = data.get("shift_mode", "abs")
 
-    max_len = int(d.get("max_len", 5))
-    pos_shift = int(d.get("pos_shift", 0))
+    unify_small = data.get("unify_small", False)
+    allow_daku = data.get("allow_daku", False)
+    allow_handaku = data.get("allow_handaku", False)
 
-    use_shift = d.get("use_shift", False)
-    ks_val = int(d.get("ks_abs", 1))
-    shift_mode = d.get("shift_mode", "abs")
-
-    unify_small = d.get("unify_small", False)
-    allow_daku = d.get("allow_daku", False)
-    allow_handaku = d.get("allow_handaku", False)
-    unify_scope = d.get("unify_scope", "all")
-
-    conn_small = unify_small and unify_scope in ["all", "conn"]
-    conn_daku = allow_daku and unify_scope in ["all", "conn"]
-    conn_handaku = allow_handaku and unify_scope in ["all", "conn"]
-
-    filt_small = unify_small and unify_scope in ["all", "filter"]
-    filt_daku = allow_daku and unify_scope in ["all", "filter"]
-    filt_handaku = allow_handaku and unify_scope in ["all", "filter"]
-
-    len_mode = d.get("len_mode", "free")  # free / same / diff
-    display_mode = d.get("display_mode", "normal")  # normal / realtime / count / early
-    sort_mode = d.get("sort_mode", "default")
-
-    # 早期切り上げモード
+    len_mode = data.get("len_mode", "free")
+    display_mode = data.get("display_mode", "normal")
+    sort_mode = data.get("sort_mode", "default")
     early_cut = (display_mode == "early") and limit_enabled
 
-    # 文字数計
-    target_total_len = int(d["target_total_len"]) if d.get("target_total_len") else None
-
-    # 文字制限
-    raw_valid = to_katakana(d.get("valid_chars", ""))
-    valid_chars = None
-    if raw_valid:
-        valid_chars = set(
-            get_base_char(c, filt_small, filt_daku, filt_handaku)
-            for c in raw_valid.replace("、", "").replace(",", "")
-            if c.strip()
-        )
-
-    # 赤・青ワード（辞書マネージャ）
-    red_words = set(d.get("red_words", []))
-    blue_words = set(d.get("blue_words", []))
-
-    # 全語開始字・終了字
-    all_start_chars = [
-        get_clean_char(c.strip(), "head", 0, filt_small, filt_daku, filt_handaku)
-        for c in re.split("[、,]", to_katakana(d.get("all_start_char", "")))
-        if c.strip()
-    ]
-    all_end_chars = [
-        get_clean_char(c.strip(), "head", 0, filt_small, filt_daku, filt_handaku)
-        for c in re.split("[、,]", to_katakana(d.get("all_end_char", "")))
-        if c.strip()
-    ]
-
-    # 使用不可文字・禁止開始文字
-    exclude_chars = [
-        get_base_char(c.strip(), filt_small, filt_daku, filt_handaku)
-        for c in re.split("[、,]", to_katakana(d.get("exclude_chars", "")))
-        if c.strip()
-    ]
-    ban_start_chars = [
-        get_base_char(c.strip(), filt_small, filt_daku, filt_handaku)
-        for c in re.split("[、,]", to_katakana(d.get("ban_start_chars", "")))
-        if c.strip()
-    ]
-
-    # 必須文字（複数・回数指定）
-    must_char_rules = parse_must_chars(
-        d.get("must_char", ""),
-        unify_small=filt_small,
-        unify_daku=filt_daku,
-        unify_handaku=filt_handaku,
+    target_total_len = (
+        int(data["target_total_len"]) if data.get("target_total_len") else None
     )
 
-    # 開始単語・開始字・終了字（ひらがなOK）
-    start_word = to_katakana(d.get("start_word", ""))
+    # -------------------------
+    # valid chars
+    # -------------------------
+    raw_valid = to_katakana(data.get("valid_chars", ""))
+    valid_chars = (
+        {get_base_char(c, unify_small, allow_daku, allow_handaku)
+         for c in raw_valid if c.strip()}
+        if raw_valid else None
+    )
+
+    # -------------------------
+    # 赤/青ワード
+    # -------------------------
+    red_words = set(data.get("red_words", []))
+    blue_words = set(data.get("blue_words", []))
+
+    # -------------------------
+    # 全語開始/終了
+    # -------------------------
+    asc = [
+        get_clean_char(c, "head", 0, unify_small, allow_daku, allow_handaku)
+        for c in re.split("[,、]", to_katakana(data.get("all_start_char", "")))
+        if c.strip()
+    ]
+    aec = [
+        get_clean_char(c, "head", 0, unify_small, allow_daku, allow_handaku)
+        for c in re.split("[,、]", to_katakana(data.get("all_end_char", "")))
+        if c.strip()
+    ]
+
+    # -------------------------
+    # exclude / ban start
+    # -------------------------
+    exc = [
+        get_base_char(c, unify_small, allow_daku, allow_handaku)
+        for c in re.split("[,、]", to_katakana(data.get("exclude_chars", "")))
+        if c.strip()
+    ]
+    bsc = [
+        get_base_char(c, unify_small, allow_daku, allow_handaku)
+        for c in re.split("[,、]", to_katakana(data.get("ban_start_chars", "")))
+        if c.strip()
+    ]
+
+    # -------------------------
+    # 必須文字
+    # -------------------------
+    must_chars = parse_must_chars(
+        data.get("must_char", ""),
+        unify_small,
+        allow_daku,
+        allow_handaku,
+    )
+
+    # -------------------------
+    # 開始単語/開始字/終了字
+    # -------------------------
+    start_word = to_katakana(data.get("start_word", ""))
     start_char = get_clean_char(
-        to_katakana(d.get("start_char", "")),
-        "head",
-        0,
-        filt_small,
-        filt_daku,
-        filt_handaku,
+        to_katakana(data.get("start_char", "")),
+        "head", 0,
+        unify_small, allow_daku, allow_handaku
     )
     end_char = get_clean_char(
-        to_katakana(d.get("end_char", "")),
-        "head",
-        0,
-        filt_small,
-        filt_daku,
-        filt_handaku,
+        to_katakana(data.get("end_char", "")),
+        "head", 0,
+        unify_small, allow_daku, allow_handaku
     )
 
-    # ---- 辞書プール構築 ----
-    raw_pool = []
-    for cat in d.get("categories", ["country"]):
-        raw_pool.extend(DICTIONARY_MASTER.get(cat, []))
-    raw_pool = list(set(raw_pool))
+    # -------------------------
+    # 辞書ロード
+    # -------------------------
+    raw_words = []
+    for cat in data.get("categories", ["country"]):
+        raw_words += DICTIONARY_MASTER.get(cat, [])
+    raw_words = list(set(raw_words))
 
-    temp_pool = []
-    for w in raw_pool:
+    # -------------------------
+    # プール作成
+    # -------------------------
+    pool = []
+    for w in raw_words:
         if w in red_words:
             continue
 
-        # valid_chars チェック
-        if valid_chars is not None:
-            ok = True
-            for c in w.replace("ー", ""):
-                bc = get_base_char(c, filt_small, filt_daku, filt_handaku)
-                if bc not in valid_chars:
-                    ok = False
-                    break
-            if not ok:
+        # valid chars
+        if valid_chars:
+            if any(
+                get_base_char(c, unify_small, allow_daku, allow_handaku)
+                not in valid_chars
+                for c in w.replace("ー", "")
+            ):
                 continue
 
-        h_char = get_clean_char(w, "head", 0, filt_small, filt_daku, filt_handaku)
-        t_char = get_clean_char(w, "tail", 0, filt_small, filt_daku, filt_handaku)
+        h = get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
+        t = get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku)
 
-        if all_start_chars and h_char not in all_start_chars:
+        if asc and h not in asc:
             continue
-        if all_end_chars and t_char not in all_end_chars:
-            continue
-
-        norm_w = "".join(get_base_char(c, filt_small, filt_daku, filt_handaku) for c in w)
-        if any(ex in norm_w for ex in exclude_chars):
-            continue
-        if any(h_char == bs for bs in ban_start_chars):
+        if aec and t not in aec:
             continue
 
-        temp_pool.append(w)
+        # exclude chars
+        if any(
+            e in "".join(get_base_char(c, unify_small, allow_daku, allow_handaku)
+                         for c in w)
+            for e in exc
+        ):
+            continue
 
-    # 開始字指定がある場合、その開始字のものだけ
+        if h in bsc:
+            continue
+
+        pool.append(w)
+
+    # -------------------------
+    # start_char 指定で start_word なし
+    # -------------------------
     if start_char and not start_word:
-        temp_pool = [
-            w
-            for w in temp_pool
-            if get_clean_char(w, "head", 0, filt_small, filt_daku, filt_handaku) == start_char
+        pool = [
+            w for w in pool
+            if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
+            == start_char
         ]
 
-    # 終了字指定がある場合、その終了字（濁点・半濁点含む）のものだけ
+    # -------------------------
+    # end_char
+    # -------------------------
     if end_char:
-        end_variants_filter = get_variants(end_char, allow_daku, allow_handaku, unify_small=filt_small)
-        temp_pool = [
-            w
-            for w in temp_pool
-            if get_clean_char(w, "tail", 0, filt_small, filt_daku, filt_handaku) in end_variants_filter
+        ev = get_variants(end_char, allow_daku, allow_handaku, unify_small)
+        pool = [
+            w for w in pool
+            if get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku)
+            in ev
         ]
 
-    # 共役排除（同じ開始・終了ペアが複数ある場合は1つだけ残す）
-    if d.get("exclude_conjugate"):
-        pair_map = defaultdict(list)
-        for w in temp_pool:
-            ch = get_clean_char(w, "head", 0, conn_small, conn_daku, conn_handaku)
-            ct = get_clean_char(w, "tail", 0, conn_small, conn_daku, conn_handaku)
-            pair_map[f"{ch}_{ct}"].append(w)
-        word_pool = [words[0] for words in pair_map.values()]
-    else:
-        word_pool = temp_pool
+    # -------------------------
+    # 共役排除
+    # -------------------------
+    if data.get("exclude_conjugate"):
+        mp = defaultdict(list)
+        for w in pool:
+            h = get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
+            t = get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku)
+            mp[f"{h}_{t}"].append(w)
+        pool = [v[0] for v in mp.values()]
 
-    # ---- キャッシュ構築 ----
-    head_index = defaultdict(list)
-    tail_index = defaultdict(list)
-    head_cache = {}
-    tail_cache = {}
+    # -------------------------
+    # インデックス作成
+    # -------------------------
+    head_map = defaultdict(list)
+    tail_map = defaultdict(list)
+    head_char = {}
+    tail_char = {}
     clean_cache = {}
     char_sets = {}
 
-    for w in word_pool:
-        h_conn = get_clean_char(w, "head", 0, conn_small, conn_daku, conn_handaku)
-        t_conn = get_clean_char(w, "tail", 0, conn_small, conn_daku, conn_handaku)
-        head_cache[w] = h_conn
-        tail_cache[w] = t_conn
-        head_index[h_conn].append(w)
-        tail_index[t_conn].append(w)
+    for w in pool:
+        h = get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
+        t = get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku)
+        head_char[w] = h
+        tail_char[w] = t
+        head_map[h].append(w)
+        tail_map[t].append(w)
 
-        clean = w.replace("ー", "")
-        clean_cache[w] = clean
-        char_sets[w] = set(get_base_char(c, filt_small, filt_daku, filt_handaku) for c in clean)
+        c = w.replace("ー", "")
+        clean_cache[w] = c
+        char_sets[w] = {
+            get_base_char(x, unify_small, allow_daku, allow_handaku)
+            for x in c
+        }
 
+    # -------------------------
+    # DFS
+    # -------------------------
     results = []
     start_time = time.time()
 
-    # ---- DFS ----
-    def check_timeout():
-        if timeout is None:
-            return False
-        return (time.time() - start_time) > timeout
+    def timeout_check():
+        return timeout_sec is not None and (time.time() - start_time) > timeout_sec
 
-    def check_must_chars(norm_text: str) -> bool:
-        if not must_char_rules:
-            return True
-        for ch, min_cnt, exact, exact_cnt in must_char_rules:
-            cnt = norm_text.count(ch)
+    def must_ok(s):
+        for ch, mn, exact, exn in must_chars:
+            cnt = s.count(ch)
             if exact:
-                if cnt != (exact_cnt or 0):
+                if cnt != exn:
                     return False
             else:
-                if cnt < min_cnt:
+                if cnt < mn:
                     return False
         return True
 
-    def solve(path, current_total_len, used_chars):
-        # タイムアウト
-        if check_timeout():
+    def solve(path, total_len, used_chars):
+        if timeout_check():
+            return
+        if early_cut and len(results) >= limit_count:
+            return
+        if target_total_len and total_len > target_total_len:
             return
 
-        # 早期切り上げモード
-        if early_cut and len(results) >= limit:
-            return
-
-        # 文字数計オーバー
-        if target_total_len is not None and current_total_len > target_total_len:
-            return
-
-        # 文字数構成制約
+        # 文字数構成
         if len_mode == "diff" and len(path) > 1:
-            lens = [len(x) for x in path]
-            if len(lens) != len(set(lens)):
+            L = [len(x) for x in path]
+            if len(L) != len(set(L)):
                 return
 
-        # 完成判定
+        # 完成
         if len(path) == max_len:
             if len_mode == "same":
-                lens = [len(x) for x in path]
-                if len(set(lens)) > 1:
+                L = [len(x) for x in path]
+                if len(set(L)) > 1:
                     return
 
-            # 必須文字チェック
-            norm_t = "".join(
-                get_base_char(c, filt_small, filt_daku, filt_handaku)
+            norm = "".join(
+                get_base_char(c, unify_small, allow_daku, allow_handaku)
                 for c in "".join(path).replace("ー", "")
             )
-            if not check_must_chars(norm_t):
+            if not must_ok(norm):
                 return
 
-            # 文字数計
-            if target_total_len is not None and current_total_len != target_total_len:
+            if target_total_len and total_len != target_total_len:
                 return
 
-            # 終了字指定
             if end_char:
-                last_tail = tail_cache[path[-1]]
-                end_variants = get_variants(end_char, allow_daku, allow_handaku, unify_small=conn_small)
-                if last_tail not in end_variants:
+                if tail_char[path[-1]] not in get_variants(end_char, allow_daku, allow_handaku, unify_small):
                     return
 
-            results.append(list(path))
+            results.append(path[:])
             return
 
-        # 次の接続
-        is_odd = (len(path) % 2 != 0)
-        last_word = path[-1]
-        last_clean = clean_cache[last_word]
+        last = path[-1]
+        cl = clean_cache[last]
+        is_odd = len(path) % 2 != 0
 
-        base_offsets = [pos_shift]
-        if d.get("auto_recovery"):
-            base_offsets += list(range(pos_shift + 1, len(last_clean)))
+        # 物理ずらし
+        offsets = [pos_shift]
+        if data.get("auto_recovery"):
+            offsets += list(range(pos_shift + 1, len(cl)))
 
-        for off in base_offsets:
+        for off in offsets:
             src = get_clean_char(
-                last_word,
-                ("tail" if not d.get("round_trip") or is_odd else "head"),
+                last,
+                "tail" if not data.get("round_trip") or is_odd else "head",
                 off,
-                conn_small,
-                conn_daku,
-                conn_handaku,
+                unify_small, allow_daku, allow_handaku
             )
             if not src:
                 continue
 
+            # ずらし
             raw_targets = set()
             if use_shift:
                 if shift_mode == "abs":
-                    raw_targets.add(shift_kana_fast(src, abs(ks_val)))
-                    raw_targets.add(shift_kana_fast(src, -abs(ks_val)))
+                    raw_targets.add(shift_kana_fast(src, abs(ks_abs)))
+                    raw_targets.add(shift_kana_fast(src, -abs(ks_abs)))
                 else:
-                    raw_targets.add(shift_kana_fast(src, ks_val))
+                    raw_targets.add(shift_kana_fast(src, ks_abs))
             else:
                 raw_targets.add(src)
 
+            # 濁点・半濁点
             targets = set()
-            for rt in raw_targets:
-                targets.update(get_variants(rt, allow_daku, allow_handaku, unify_small=conn_small))
+            for r in raw_targets:
+                targets |= get_variants(r, allow_daku, allow_handaku, unify_small)
 
-            found_any = False
-            for tc in targets:
-                if d.get("round_trip") and is_odd:
-                    cands = tail_index[tc]
-                else:
-                    cands = head_index[tc]
-
-                for nxt in cands:
-                    if nxt in path:
+            found = False
+            for t in targets:
+                cands = (
+                    tail_map[t]
+                    if data.get("round_trip") and is_odd
+                    else head_map[t]
+                )
+                for nx in cands:
+                    if nx in path:
                         continue
-
-                    if d.get("char_limit_mode"):
-                        if not char_sets[nxt].isdisjoint(used_chars):
-                            continue
-
-                    new_used = used_chars | char_sets[nxt]
-                    solve(path + [nxt], current_total_len + len(nxt), new_used)
-                    found_any = True
-
-            if found_any:
+                    if data.get("char_limit_mode") and not char_sets[nx].isdisjoint(used_chars):
+                        continue
+                    solve(
+                        path + [nx],
+                        total_len + len(nx),
+                        used_chars | char_sets[nx]
+                    )
+                    found = True
+            if found:
                 break
 
-    # ---- 探索開始 ----
-    if start_word and start_word in word_pool:
-        starts = [start_word]
-    else:
-        starts = word_pool
+    # -------------------------
+    # 開始点
+    # -------------------------
+    starts = [start_word] if start_word and start_word in pool else pool
 
     for w in sorted(starts):
         if start_char and not start_word:
-            if get_clean_char(w, "head", 0, filt_small, filt_daku, filt_handaku) != start_char:
+            if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku) != start_char:
                 continue
-        initial_used = char_sets[w].copy() if d.get("char_limit_mode") else set()
-        solve([w], len(w), initial_used)
-
-        if early_cut and len(results) >= limit:
+        solve(
+            [w],
+            len(w),
+            char_sets[w].copy() if data.get("char_limit_mode") else set()
+        )
+        if early_cut and len(results) >= limit_count:
+            break
+        if timeout_check():
             break
 
-        if timeout is not None and (time.time() - start_time) > timeout:
-            break
-
-    # ---- ソート ----
+    # -------------------------
+    # ソート
+    # -------------------------
     if sort_mode == "kana":
         results.sort()
     elif sort_mode == "len_asc":
@@ -546,13 +534,15 @@ def search():
     elif sort_mode == "random":
         random.shuffle(results)
 
-    # limit は「返す件数」の上限としても使う
-    if limit_enabled and len(results) > limit:
-        results = results[:limit]
+    if limit_enabled and len(results) > limit_count:
+        results = results[:limit_count]
 
     return jsonify({"routes": results, "count": len(results)})
 
 
+# =========================
+#  メイン
+# =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

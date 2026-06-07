@@ -6,9 +6,6 @@ import re
 from collections import defaultdict
 from flask import Flask, render_template, request, jsonify
 
-# =========================
-#  外部辞書
-# =========================
 try:
     from dictionary import DICTIONARY_MASTER
 except ImportError:
@@ -21,9 +18,6 @@ except ImportError:
 sys.setrecursionlimit(10000)
 app = Flask(__name__)
 
-# =========================
-#  50音・変換マップ
-# =========================
 KANA_LIST = (
     "アイウエオ"
     "カキクケコ"
@@ -62,9 +56,6 @@ REV_DAKU = {v: k for k, v in DAKU_MAP.items()}
 REV_HANDAKU = {v: k for k, v in HANDAKU_MAP.items()}
 KANA_INDEX = {c: i for i, c in enumerate(KANA_LIST)}
 
-# =========================
-#  ユーティリティ
-# =========================
 def to_katakana(text: str) -> str:
     if not text:
         return ""
@@ -76,7 +67,6 @@ def to_katakana(text: str) -> str:
         else:
             res.append(c)
     return "".join(res)
-
 
 def get_base_char(c: str, unify_small=False, unify_daku=False, unify_handaku=False) -> str:
     if not c:
@@ -90,7 +80,6 @@ def get_base_char(c: str, unify_small=False, unify_daku=False, unify_handaku=Fal
         res = REV_HANDAKU.get(res, res)
     return res
 
-
 def get_clean_char(w: str, pos="head", offset=0, unify_small=False, unify_daku=False, unify_handaku=False):
     text = w.replace("ー", "")
     if not text:
@@ -102,12 +91,10 @@ def get_clean_char(w: str, pos="head", offset=0, unify_small=False, unify_daku=F
     except IndexError:
         return ""
 
-
 def shift_kana_fast(char: str, n: int) -> str:
     if char not in KANA_INDEX:
         return char
     return KANA_LIST[(KANA_INDEX[char] + n) % len(KANA_LIST)]
-
 
 def get_variants(char: str, allow_daku: bool, allow_handaku: bool, unify_small=False):
     base = SMALL_TO_LARGE.get(char, char) if unify_small else char
@@ -127,7 +114,6 @@ def get_variants(char: str, allow_daku: bool, allow_handaku: bool, unify_small=F
             if base == v:
                 vs.add(k)
     return vs
-
 
 def parse_must_chars(raw: str, unify_small=False, unify_daku=False, unify_handaku=False):
     if not raw:
@@ -164,35 +150,18 @@ def parse_must_chars(raw: str, unify_small=False, unify_daku=False, unify_handak
         res.append((ch, min_cnt, exact, exact_cnt))
     return res
 
-
-# =========================
-#  Flask ルート
-# =========================
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/get_dictionary")
 def get_dictionary():
     return jsonify(DICTIONARY_MASTER)
 
-
-# =========================
-#  Reset（完全同期版）
-# =========================
 @app.route("/reset", methods=["POST"])
 def reset():
-    """
-    index.html 側では localStorage を削除してリロードする。
-    サーバー側では特に保持している状態はないので OK を返すだけ。
-    """
     return jsonify({"status": "ok"})
 
-
-# =========================
-#  探索ルート（開始字バグ修正済み）
-# =========================
 @app.route("/search", methods=["POST"])
 def search():
     data = request.json or {}
@@ -310,7 +279,6 @@ def search():
 
         pool.append(w)
 
-    # ★ 修正：開始字フィルタ（濁点・小文字対応）
     if start_char and not start_word:
         sc_variants = get_variants(start_char, allow_daku, allow_handaku, unify_small)
         pool = [
@@ -319,21 +287,18 @@ def search():
                in sc_variants
         ]
 
-    if end_char:
-        ev = get_variants(end_char, allow_daku, allow_handaku, unify_small)
-        pool = [
-            w for w in pool
-            if get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku)
-            in ev
-        ]
-
     if data.get("exclude_conjugate"):
         mp = defaultdict(list)
         for w in pool:
             h = get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
             t = get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku)
-            mp[f"{h}_{t}"].append(w)
-        pool = [v[0] for v in mp.values()]
+            mp[(h, t)].append(w)
+
+        pool = [
+            w for w in pool
+            if len(mp[(get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku),
+                       get_clean_char(w, "tail", 0, unify_small, allow_daku, allow_handaku))]) == 1
+        ]
 
     head_map = defaultdict(list)
     tail_map = defaultdict(list)
@@ -493,10 +458,6 @@ def search():
 
     return jsonify({"routes": results, "count": len(results)})
 
-
-# =========================
-#  メイン
-# =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

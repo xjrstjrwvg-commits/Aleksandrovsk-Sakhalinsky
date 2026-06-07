@@ -91,14 +91,7 @@ def get_base_char(c: str, unify_small=False, unify_daku=False, unify_handaku=Fal
     return res
 
 
-def get_clean_char(
-    w: str,
-    pos: str = "head",
-    offset: int = 0,
-    unify_small=False,
-    unify_daku=False,
-    unify_handaku=False,
-) -> str:
+def get_clean_char(w: str, pos="head", offset=0, unify_small=False, unify_daku=False, unify_handaku=False):
     text = w.replace("ー", "")
     if not text:
         return ""
@@ -183,16 +176,27 @@ def index():
 @app.route("/get_dictionary")
 def get_dictionary():
     return jsonify(DICTIONARY_MASTER)
+
+
 # =========================
-#  探索ルート
+#  Reset（完全同期版）
+# =========================
+@app.route("/reset", methods=["POST"])
+def reset():
+    """
+    index.html 側では localStorage を削除してリロードする。
+    サーバー側では特に保持している状態はないので OK を返すだけ。
+    """
+    return jsonify({"status": "ok"})
+
+
+# =========================
+#  探索ルート（開始字バグ修正済み）
 # =========================
 @app.route("/search", methods=["POST"])
 def search():
     data = request.json or {}
 
-    # -------------------------
-    # 基本パラメータ
-    # -------------------------
     timeout_enabled = data.get("timeout_enabled", True)
     timeout_sec = int(data.get("timeout", 15)) if timeout_enabled else None
     limit_enabled = data.get("limit_enabled", True)
@@ -217,9 +221,6 @@ def search():
         int(data["target_total_len"]) if data.get("target_total_len") else None
     )
 
-    # -------------------------
-    # valid chars
-    # -------------------------
     raw_valid = to_katakana(data.get("valid_chars", ""))
     valid_chars = (
         {get_base_char(c, unify_small, allow_daku, allow_handaku)
@@ -227,15 +228,9 @@ def search():
         if raw_valid else None
     )
 
-    # -------------------------
-    # 赤/青ワード
-    # -------------------------
     red_words = set(data.get("red_words", []))
     blue_words = set(data.get("blue_words", []))
 
-    # -------------------------
-    # 全語開始/終了
-    # -------------------------
     asc = [
         get_clean_char(c, "head", 0, unify_small, allow_daku, allow_handaku)
         for c in re.split("[,、]", to_katakana(data.get("all_start_char", "")))
@@ -247,9 +242,6 @@ def search():
         if c.strip()
     ]
 
-    # -------------------------
-    # exclude / ban start
-    # -------------------------
     exc = [
         get_base_char(c, unify_small, allow_daku, allow_handaku)
         for c in re.split("[,、]", to_katakana(data.get("exclude_chars", "")))
@@ -261,9 +253,6 @@ def search():
         if c.strip()
     ]
 
-    # -------------------------
-    # 必須文字
-    # -------------------------
     must_chars = parse_must_chars(
         data.get("must_char", ""),
         unify_small,
@@ -271,9 +260,6 @@ def search():
         allow_handaku,
     )
 
-    # -------------------------
-    # 開始単語/開始字/終了字
-    # -------------------------
     start_word = to_katakana(data.get("start_word", ""))
     start_char = get_clean_char(
         to_katakana(data.get("start_char", "")),
@@ -286,23 +272,16 @@ def search():
         unify_small, allow_daku, allow_handaku
     )
 
-    # -------------------------
-    # 辞書ロード
-    # -------------------------
     raw_words = []
     for cat in data.get("categories", ["country"]):
         raw_words += DICTIONARY_MASTER.get(cat, [])
     raw_words = list(set(raw_words))
 
-    # -------------------------
-    # プール作成
-    # -------------------------
     pool = []
     for w in raw_words:
         if w in red_words:
             continue
 
-        # valid chars
         if valid_chars:
             if any(
                 get_base_char(c, unify_small, allow_daku, allow_handaku)
@@ -319,7 +298,6 @@ def search():
         if aec and t not in aec:
             continue
 
-        # exclude chars
         if any(
             e in "".join(get_base_char(c, unify_small, allow_daku, allow_handaku)
                          for c in w)
@@ -332,19 +310,15 @@ def search():
 
         pool.append(w)
 
-    # -------------------------
-    # start_char 指定で start_word なし
-    # -------------------------
+    # ★ 修正：開始字フィルタ（濁点・小文字対応）
     if start_char and not start_word:
+        sc_variants = get_variants(start_char, allow_daku, allow_handaku, unify_small)
         pool = [
             w for w in pool
             if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
-            == start_char
+               in sc_variants
         ]
 
-    # -------------------------
-    # end_char
-    # -------------------------
     if end_char:
         ev = get_variants(end_char, allow_daku, allow_handaku, unify_small)
         pool = [
@@ -353,9 +327,6 @@ def search():
             in ev
         ]
 
-    # -------------------------
-    # 共役排除
-    # -------------------------
     if data.get("exclude_conjugate"):
         mp = defaultdict(list)
         for w in pool:
@@ -364,9 +335,6 @@ def search():
             mp[f"{h}_{t}"].append(w)
         pool = [v[0] for v in mp.values()]
 
-    # -------------------------
-    # インデックス作成
-    # -------------------------
     head_map = defaultdict(list)
     tail_map = defaultdict(list)
     head_char = {}
@@ -389,9 +357,6 @@ def search():
             for x in c
         }
 
-    # -------------------------
-    # DFS
-    # -------------------------
     results = []
     start_time = time.time()
 
@@ -417,13 +382,11 @@ def search():
         if target_total_len and total_len > target_total_len:
             return
 
-        # 文字数構成
         if len_mode == "diff" and len(path) > 1:
             L = [len(x) for x in path]
             if len(L) != len(set(L)):
                 return
 
-        # 完成
         if len(path) == max_len:
             if len_mode == "same":
                 L = [len(x) for x in path]
@@ -451,7 +414,6 @@ def search():
         cl = clean_cache[last]
         is_odd = len(path) % 2 != 0
 
-        # 物理ずらし
         offsets = [pos_shift]
         if data.get("auto_recovery"):
             offsets += list(range(pos_shift + 1, len(cl)))
@@ -466,7 +428,6 @@ def search():
             if not src:
                 continue
 
-            # ずらし
             raw_targets = set()
             if use_shift:
                 if shift_mode == "abs":
@@ -477,7 +438,6 @@ def search():
             else:
                 raw_targets.add(src)
 
-            # 濁点・半濁点
             targets = set()
             for r in raw_targets:
                 targets |= get_variants(r, allow_daku, allow_handaku, unify_small)
@@ -503,14 +463,11 @@ def search():
             if found:
                 break
 
-    # -------------------------
-    # 開始点
-    # -------------------------
     starts = [start_word] if start_word and start_word in pool else pool
 
     for w in sorted(starts):
         if start_char and not start_word:
-            if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku) != start_char:
+            if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku) not in get_variants(start_char, allow_daku, allow_handaku, unify_small):
                 continue
         solve(
             [w],
@@ -522,9 +479,6 @@ def search():
         if timeout_check():
             break
 
-    # -------------------------
-    # ソート
-    # -------------------------
     if sort_mode == "kana":
         results.sort()
     elif sort_mode == "len_asc":

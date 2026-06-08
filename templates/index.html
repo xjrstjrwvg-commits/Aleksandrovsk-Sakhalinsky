@@ -26,7 +26,6 @@
 
 <div class="max-w-md mx-auto space-y-3">
 
-    <!-- Header -->
     <header class="flex justify-between items-center py-1">
         <div class="flex items-center gap-3">
             <h1 class="text-xl font-black italic text-blue-600">Ultra Engine Pro</h1>
@@ -38,7 +37,6 @@
         </div>
     </header>
 
-    <!-- 基本入力 -->
     <div class="glass rounded-2xl p-4 space-y-4">
 
         <input id="sw" placeholder="開始単語（空なら自由）" class="w-full">
@@ -49,13 +47,11 @@
             <input id="ec" placeholder="終了字">
         </div>
 
-        <!-- 詳細設定 -->
         <details class="border rounded-2xl p-2 bg-slate-50/50 dark:bg-slate-800/20">
             <summary class="text-center py-2 text-[11px] font-bold text-blue-600 cursor-pointer">＋ 詳細設定</summary>
 
             <div class="space-y-4 pt-1 pb-2">
 
-                <!-- 全語開始/終了 -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-bold text-blue-500 ml-1">全語開始字</label>
@@ -67,7 +63,6 @@
                     </div>
                 </div>
 
-                <!-- valid / exclude / ban -->
                 <div>
                     <label class="text-[10px] font-bold text-emerald-500 ml-1">使える文字</label>
                     <input id="valid_chars" class="w-32">
@@ -84,7 +79,6 @@
                     </div>
                 </div>
 
-                <!-- 合計文字数 -->
                 <div>
                     <label class="text-[10px] font-bold text-slate-300 dark:text-slate-200 ml-1">合計文字数</label>
                     <div class="flex gap-2">
@@ -94,7 +88,6 @@
                     </div>
                 </div>
 
-                <!-- len_mode / sort -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-bold text-emerald-500 ml-1">文字数構成</label>
@@ -116,7 +109,6 @@
                     </div>
                 </div>
 
-                <!-- ずらし -->
                 <div class="glass rounded-xl p-3 space-y-3">
                     <label class="text-[11px] font-bold text-indigo-500">50音ずらし（専用枠）</label>
 
@@ -155,7 +147,6 @@
                     </div>
                 </div>
 
-                <!-- フラグ類 -->
                 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] font-bold">
                     <label><input type="checkbox" id="unify_small"> 大=小</label>
                     <label><input type="checkbox" id="allow_daku"> 濁点OK</label>
@@ -169,7 +160,6 @@
             </div>
         </details>
 
-        <!-- 単語数・timeout・limit -->
         <div class="glass rounded-xl p-3 space-y-3 mt-3">
 
             <label class="text-[10px] font-bold">単語数（max_len）</label>
@@ -209,7 +199,9 @@
             </div>
 
         </div>
-    <!-- カテゴリ & 実行 -->
+
+    </div>
+
     <div class="flex justify-between items-center pt-1">
         <div class="flex gap-3 text-[11px] font-bold">
             <label><input type="checkbox" name="cat" value="country" checked> 国</label>
@@ -224,10 +216,8 @@
     <div id="stats" class="text-center text-[10px] font-bold text-blue-500 hidden"></div>
 </div>
 
-<!-- 結果 -->
 <div id="res" class="space-y-3 pb-20"></div>
 
-<!-- 辞書マネージャ -->
 <div id="dict-manager" class="hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-5 overflow-y-auto">
     <button onclick="hideDict()" class="mb-4 font-bold text-rose-500">CLOSE</button>
     <div class="grid grid-cols-2 gap-2 mb-4">
@@ -242,18 +232,16 @@
 </button>
 
 <script>
-/* ====== 状態 ====== */
 let wordStates = {};
 let currentRoutes = [];
 
-/* ====== UI ====== */
 const el = id => document.getElementById(id);
+
 function stepValue(id, delta){ el(id).value = (parseInt(el(id).value)||0) + delta; saveSettings(); }
 function toggleDarkMode(){ document.documentElement.classList.toggle('dark'); saveSettings(); }
 function showDict(){ el("dict-manager").classList.remove("hidden"); }
 function hideDict(){ el("dict-manager").classList.add("hidden"); }
 
-/* ====== 保存 ====== */
 function saveSettings(){
     const sm = document.querySelector('input[name="shift_mode"]:checked');
     localStorage.ultraSettings = JSON.stringify({
@@ -273,7 +261,6 @@ function saveSettings(){
         wordStates: wordStates
     });
 }
-
 function loadSettings(){
     if(!localStorage.ultraSettings) return;
     const s = JSON.parse(localStorage.ultraSettings);
@@ -293,7 +280,6 @@ function loadSettings(){
     wordStates = s.wordStates || {};
 }
 
-/* ====== 辞書 ====== */
 async function loadDict(){
     const r = await fetch("/get_dictionary");
     const dict = await r.json();
@@ -329,7 +315,6 @@ function bulkSet(st){
     });
 }
 
-/* ====== 実行 ====== */
 async function run(){
     const btn = el("btn");
     btn.innerText = "RUNNING";
@@ -402,7 +387,6 @@ async function run(){
     renderResults();
 }
 
-/* ====== 結果表示 ====== */
 function renderResults(){
     const box = el("res");
     box.innerHTML = currentRoutes.map((rt,i)=>`
@@ -421,7 +405,6 @@ function renderResults(){
     stats.classList.remove("hidden");
 }
 
-/* ====== Copy + 通知 ====== */
 function copyOne(i){
     navigator.clipboard.writeText(currentRoutes[i].join(" → "));
     showCopied();
@@ -438,6 +421,11 @@ function showCopied(){
     div.className = "fixed bottom-20 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold";
     document.body.appendChild(div);
     setTimeout(()=>div.remove(), 1200);
+}
+
+function resetSettings(){
+    localStorage.removeItem("ultraSettings");
+    location.reload();
 }
 
 window.onload = ()=>{ loadSettings(); loadDict(); };

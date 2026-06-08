@@ -261,6 +261,44 @@ function saveSettings(){
         wordStates: wordStates
     });
 }
+<script>
+let wordStates = {};
+let currentRoutes = [];
+
+const el = id => document.getElementById(id);
+
+function stepValue(id, delta){ el(id).value = (parseInt(el(id).value)||0) + delta; saveSettings(); }
+function toggleDarkMode(){ document.documentElement.classList.toggle('dark'); saveSettings(); }
+function showDict(){ el("dict-manager").classList.remove("hidden"); }
+function hideDict(){ el("dict-manager").classList.add("hidden"); }
+
+function saveSettings(){
+    const sm = document.querySelector('input[name="shift_mode"]:checked');
+
+    const cats = [...document.querySelectorAll('input[name="cat"]')].map(c => ({
+        value: c.value,
+        checked: c.checked
+    }));
+
+    localStorage.ultraSettings = JSON.stringify({
+        sw: sw.value, sc: sc.value, mc: mc.value, ec: ec.value,
+        asc: asc.value, aec: aec.value, exc: exc.value, bsc: bsc.value,
+        ml: ml.value, ps: ps.value, ks_abs: ks_abs.value, ttl: ttl.value,
+        valid_chars: valid_chars.value, len_mode: len_mode.value, sort_mode: sort_mode.value,
+        use_shift: use_shift.checked, unify_small: unify_small.checked,
+        allow_daku: allow_daku.checked, allow_handaku: allow_handaku.checked,
+        auto_recovery: auto_recovery.checked, round_trip: round_trip.checked,
+        char_limit_mode: char_limit_mode.checked, exclude_conjugate: exclude_conjugate.checked,
+        timeout: timeout.value, timeout_enabled: timeout_enabled.checked,
+        limit: limit.value, limit_enabled: limit_enabled.checked,
+        realtime_counter: realtime_counter.checked, early_cut: early_cut.checked,
+        shift_mode: sm ? sm.value : "abs",
+        dark_mode: document.documentElement.classList.contains("dark"),
+        wordStates: wordStates,
+        categories: cats
+    });
+}
+
 function loadSettings(){
     if(!localStorage.ultraSettings) return;
     const s = JSON.parse(localStorage.ultraSettings);
@@ -278,6 +316,13 @@ function loadSettings(){
     }
     if(s.dark_mode) document.documentElement.classList.add("dark");
     wordStates = s.wordStates || {};
+
+    if(s.categories){
+        s.categories.forEach(cat=>{
+            const box = document.querySelector(`input[name="cat"][value="${cat.value}"]`);
+            if(box) box.checked = cat.checked;
+        });
+    }
 }
 
 async function loadDict(){

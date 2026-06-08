@@ -1,3 +1,5 @@
+# === ULTRA ENGINE Pro app.py（高速化版 Part 1 / 2）===
+
 import os
 import sys
 import time
@@ -80,7 +82,8 @@ def get_base_char(c: str, unify_small=False, unify_daku=False, unify_handaku=Fal
         res = REV_HANDAKU.get(res, res)
     return res
 
-def get_clean_char(w: str, pos="head", offset=0, unify_small=False, unify_daku=False, unify_handaku=False):
+def get_clean_char(w: str, pos="head", offset=0,
+                   unify_small=False, unify_daku=False, unify_handaku=False):
     text = w.replace("ー", "")
     if not text:
         return ""
@@ -314,6 +317,7 @@ def search():
             for x in c
         }
 
+    # === Part2 に続く ===
     results = []
     start_time = time.time()
 
@@ -331,6 +335,14 @@ def search():
                     return False
         return True
 
+    # 長さ制約用の最小・最大語長（target_total_len 用の枝刈り）
+    if pool:
+        min_word_len = min(len(w) for w in pool)
+        max_word_len = max(len(w) for w in pool)
+    else:
+        min_word_len = 0
+        max_word_len = 0
+
     def solve(path, total_len, used_chars):
         if timeout_check():
             return
@@ -338,6 +350,16 @@ def search():
             return
         if target_total_len and total_len > target_total_len:
             return
+
+        # target_total_len に対する枝刈り（残り語数から到達可能性を判定）
+        if target_total_len and min_word_len > 0 and max_word_len > 0:
+            remain_slots = max_len - len(path)
+            min_possible = total_len + min_word_len * remain_slots
+            max_possible = total_len + max_word_len * remain_slots
+            if min_possible > target_total_len:
+                return
+            if max_possible < target_total_len:
+                return
 
         if len_mode == "diff" and len(path) > 1:
             L = [len(x) for x in path]

@@ -279,14 +279,6 @@ def search():
 
         pool.append(w)
 
-    if start_char and not start_word:
-        sc_variants = get_variants(start_char, allow_daku, allow_handaku, unify_small)
-        pool = [
-            w for w in pool
-            if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku)
-               in sc_variants
-        ]
-
     if data.get("exclude_conjugate"):
         mp = defaultdict(list)
         for w in pool:
@@ -428,12 +420,17 @@ def search():
             if found:
                 break
 
-    starts = [start_word] if start_word and start_word in pool else pool
+    starts = []
+    if start_word and start_word in pool:
+        starts = [start_word]
+    else:
+        if start_char:
+            scv = get_variants(start_char, allow_daku, allow_handaku, unify_small)
+            starts = [w for w in pool if head_char[w] in scv]
+        else:
+            starts = pool[:]
 
     for w in sorted(starts):
-        if start_char and not start_word:
-            if get_clean_char(w, "head", 0, unify_small, allow_daku, allow_handaku) not in get_variants(start_char, allow_daku, allow_handaku, unify_small):
-                continue
         solve(
             [w],
             len(w),

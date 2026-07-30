@@ -86,6 +86,16 @@ def search():
     allow_daku = d.get("allow_daku", False)
     allow_handaku = d.get("allow_handaku", False)
 
+    big_small = d.get("big_small_mode", False)
+
+    # --- ★ 経由文字（最小差分追加） ---
+    via_chars = [
+        get_base_char(c.strip(), False, allow_daku, allow_handaku)
+        for c in re.split("[、,]", to_katakana(d.get("via_chars", "")))
+        if c.strip()
+    ]
+    via_mode = d.get("via_mode", "both")
+
     raw_valid = to_katakana(d.get("valid_chars", ""))
     valid_chars = set(raw_valid.replace("、","").replace(",","")) if raw_valid else None
 
@@ -160,16 +170,36 @@ def search():
     tail_index = defaultdict(list)
 
     for w in word_pool:
-        h = get_clean_char(w, "head", 0, False, allow_daku, allow_handaku)
-        t = get_clean_char(w, "tail", 0, False, allow_daku, allow_handaku)
+        h = get_clean_char(w, "head", 0, not big_small, allow_daku, allow_handaku)
+        t = get_clean_char(w, "tail", 0, not big_small, allow_daku, allow_handaku)
         head_index[h].append(w)
         tail_index[t].append(w)
 
     # --- 探索 ---
     results = []
 
-    def solve(path):
+    # ★ solve に via_index を追加（最小差分）
+    def solve(path, via_index):
+
+        # --- ★ 経由判定（最小差分追加） ---
+        if via_index < len(via_chars):
+            vc = via_chars[via_index]
+            head = get_clean_char(path[-1], "head", 0, False, allow_daku, allow_handaku)
+            tail = get_clean_char(path[-1], "tail", 0, False, allow_daku, allow_handaku)
+
+            ok = (
+                (via_mode == "head" and head == vc) or
+                (via_mode == "tail" and tail == vc) or
+                (via_mode == "both" and (head == vc or tail == vc))
+            )
+
+            if ok:
+                via_index += 1
+
+        # --- 経由未達成で終了したら NG ---
         if len(path) == max_len:
+            if via_index < len(via_chars):
+                return
 
             for b in blue_words:
                 if b not in path:
@@ -191,7 +221,8 @@ def search():
             return
 
         last = path[-1]
-        src = get_clean_char(last, "tail", 0, False, allow_daku, allow_handaku)
+
+        src = get_clean_char(last, "tail", 0, not big_small, allow_daku, allow_handaku)
         if not src:
             return
 
@@ -214,7 +245,7 @@ def search():
             for nxt in cands:
                 if nxt in path:
                     continue
-                solve(path + [nxt])
+                solve(path + [nxt], via_index)
 
     starts = [start_word] if start_word in word_pool else word_pool
 
@@ -222,7 +253,7 @@ def search():
         if start_char:
             if get_clean_char(w, "head", 0, False, allow_daku, allow_handaku) != start_char:
                 continue
-        solve([w])
+        solve([w], 0)
 
     return jsonify({"routes": results, "count": len(results)})
 
